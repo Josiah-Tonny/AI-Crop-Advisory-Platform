@@ -6,6 +6,11 @@ import Header from './components/Layout/Header';
 import MobileNav from './components/Layout/MobileNav';
 import HomePage from './components/Home/HomePage';
 import AIAdvisoryPage from './components/AIAdvisory/AIAdvisoryPage';
+import WeatherPage from './components/Weather/WeatherPage';
+import SoilPage from './components/Soil/SoilPage';
+import EducationPage from './components/Education/EducationPage';
+import CommunityPage from './components/Community/CommunityPage';
+import PestControlPage from './components/PestControl/PestControlPage';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,13 +41,14 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/ai-advisory" element={<AIAdvisoryPage />} />
-              <Route path="/weather" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Weather Page Coming Soon</h2></div>} />
+              <Route path="/weather" element={<WeatherPage />} />
+              <Route path="/soil" element={<SoilPage />} />
+              <Route path="/education" element={<EducationPage />} />
+              <Route path="/community" element={<CommunityPage />} />
+              <Route path="/pest-control" element={<PestControlPage />} />
+              {/* Keep other routes as placeholders for now */}
               <Route path="/crops" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Crops Page Coming Soon</h2></div>} />
-              <Route path="/soil" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Soil Analysis Coming Soon</h2></div>} />
-              <Route path="/pest-control" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Pest Control Coming Soon</h2></div>} />
               <Route path="/irrigation" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Irrigation Advisory Coming Soon</h2></div>} />
-              <Route path="/education" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Education Center Coming Soon</h2></div>} />
-              <Route path="/community" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Community Coming Soon</h2></div>} />
               <Route path="/settings" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Settings Coming Soon</h2></div>} />
               <Route path="/help" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Help Center Coming Soon</h2></div>} />
               <Route path="/profile" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Profile Coming Soon</h2></div>} />
@@ -50,10 +56,6 @@ function App() {
             </Routes>
           </main>
         </div>
-
-        {/* Mobile bottom navigation */}
-        <MobileNav />
-        
         <Toaster 
           position="top-right"
           toastOptions={{
@@ -71,6 +73,7 @@ function App() {
             },
           }}
         />
+        <MobileNav />
       </div>
     </Router>
   );

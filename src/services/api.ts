@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const WEATHER_API_KEY = 'c6fbd54581688fcc0d5509271b63656c';
+const WEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || 'c6fbd54581688fcc0d5509271b63656c';
 const WEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
 // Enhanced crop categories and types
@@ -51,16 +51,24 @@ export const weatherClient = axios.create({
 // Weather API functions
 export const weatherAPI = {
   getCurrentWeather: (location: string) =>
-    weatherClient.get(`/weather?q=${location}`),
+    weatherClient.get('/weather', {
+      params: { q: location }
+    }),
   
-  getForecast: (location: string) =>
-    weatherClient.get(`/forecast?q=${location}`),
+  getForecast: (location: string, days: number = 7) =>
+    weatherClient.get('/forecast', {
+      params: { q: location, cnt: days * 8 } // 8 forecasts per day (3-hour intervals)
+    }),
   
   getWeatherByCoords: (lat: number, lon: number) =>
-    weatherClient.get(`/weather?lat=${lat}&lon=${lon}`),
+    weatherClient.get('/weather', {
+      params: { lat, lon }
+    }),
   
-  getForecastByCoords: (lat: number, lon: number) =>
-    weatherClient.get(`/forecast?lat=${lat}&lon=${lon}`),
+  getForecastByCoords: (lat: number, lon: number, days: number = 7) =>
+    weatherClient.get('/forecast', {
+      params: { lat, lon, cnt: days * 8 }
+    }),
 };
 
 // AI Advisory functions for crop recommendations
