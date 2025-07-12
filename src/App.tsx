@@ -11,6 +11,8 @@ import SoilPage from './components/Soil/SoilPage';
 import EducationPage from './components/Education/EducationPage';
 import CommunityPage from './components/Community/CommunityPage';
 import PestControlPage from './components/PestControl/PestControlPage';
+import CropsPage from './components/Crops/CropsPage';
+import IrrigationPage from './components/Irrigation/IrrigationPage';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -46,9 +48,8 @@ function App() {
               <Route path="/education" element={<EducationPage />} />
               <Route path="/community" element={<CommunityPage />} />
               <Route path="/pest-control" element={<PestControlPage />} />
-              {/* Keep other routes as placeholders for now */}
-              <Route path="/crops" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Crops Page Coming Soon</h2></div>} />
-              <Route path="/irrigation" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Irrigation Advisory Coming Soon</h2></div>} />
+              <Route path="/crops" element={<CropsPage />} />
+              <Route path="/irrigation" element={<IrrigationPage />} />
               <Route path="/settings" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Settings Coming Soon</h2></div>} />
               <Route path="/help" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Help Center Coming Soon</h2></div>} />
               <Route path="/profile" element={<div className="text-center py-12"><h2 className="text-2xl font-bold text-gray-900">Profile Coming Soon</h2></div>} />
