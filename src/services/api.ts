@@ -230,6 +230,28 @@ export const aiAdvisoryService = {
       console.error('Error in getIrrigationAdvice:', error);
       throw new Error('Unable to provide irrigation advice at this time');
     }
+  },
+  
+  // Get pest control advice
+  getPestControl: async (data: {
+    location: string;
+    cropType: string;
+    symptoms: string[];
+  }) => {
+    try {
+      const weather = await weatherAPI.getCurrentWeather(data.location);
+      return await aiService.generatePestControlAdvice({
+        ...data,
+        weatherData: {
+          temp: weather.main.temp,
+          humidity: weather.main.humidity,
+          conditions: weather.weather[0].main
+        }
+      });
+    } catch (error) {
+      console.error('Error in getPestControl:', error);
+      throw new Error('Unable to get pest control advice at this time');
+    }
   }
 };
 
