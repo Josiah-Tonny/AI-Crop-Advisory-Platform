@@ -1,189 +1,302 @@
 import axios from 'axios';
+import * as aiService from './aiService';
 
-// Get API key from environment variables
-const WEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || 'c6fbd54581688fcc0d5509271b63656c';
-const WEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
-
-// Enhanced crop categories and types for East and Central Africa
-export const cropCategories = {
-  cereals: {
-    name: 'Cereals & Grains',
-    crops: ['Maize', 'Rice', 'Wheat', 'Sorghum', 'Millet', 'Barley', 'Oats', 'Teff']
+// API Configuration
+const API_CONFIG = {
+  openWeather: {
+    baseUrl: 'https://api.openweathermap.org/data/2.5',
+    apiKey: import.meta.env.VITE_OPENWEATHER_API_KEY,
   },
-  legumes: {
-    name: 'Legumes & Pulses',
-    crops: ['Beans', 'Peas', 'Lentils', 'Chickpeas', 'Cowpeas', 'Soybeans', 'Groundnuts', 'Pigeon Peas']
+  agromonitoring: {
+    baseUrl: 'https://api.agromonitoring.com/agro/1.0',
+    apiKey: import.meta.env.VITE_AGROMONITORING_API_KEY,
   },
-  vegetables: {
-    name: 'Vegetables',
-    crops: ['Tomatoes', 'Onions', 'Cabbage', 'Kale', 'Spinach', 'Carrots', 'Peppers', 'Cucumbers', 'Lettuce']
-  },
-  fruits: {
-    name: 'Fruits',
-    crops: ['Bananas', 'Mangoes', 'Avocados', 'Oranges', 'Pineapples', 'Papayas', 'Passion Fruit', 'Watermelons']
-  },
-  tubers: {
-    name: 'Root & Tuber Crops',
-    crops: ['Irish Potatoes', 'Sweet Potatoes', 'Cassava', 'Yams', 'Arrowroots', 'Taro']
-  },
-  cash_crops: {
-    name: 'Cash Crops',
-    crops: ['Coffee', 'Tea', 'Cotton', 'Sugarcane', 'Tobacco', 'Pyrethrum', 'Sisal']
-  },
-  herbs_spices: {
-    name: 'Herbs & Spices',
-    crops: ['Coriander', 'Ginger', 'Turmeric', 'Chili', 'Garlic', 'Basil', 'Mint', 'Rosemary']
+  locationIq: {
+    baseUrl: 'https://us1.locationiq.com/v1',
+    apiKey: import.meta.env.VITE_LOCATIONIQ_API_KEY,
   }
 };
 
-export const getAllCrops = (): string[] => {
-  return Object.values(cropCategories).flatMap(category => category.crops);
+// Cache for API responses
+const cache = new Map<string, any>();
+
+// Helper function to make API requests with caching
+const fetchWithCache = async <T>(
+  key: string,
+  fetchFn: () => Promise<T>,
+  ttl: number = 3600000 // 1 hour default TTL
+): Promise<T> => {
+  const now = Date.now();
+  const cached = cache.get(key);
+  
+  if (cached && (now - cached.timestamp < ttl)) {
+    return cached.data;
+  }
+  
+  const data = await fetchFn();
+  cache.set(key, { data, timestamp: now });
+  return data;
 };
 
-// OpenWeatherMap API client
-export const weatherClient = axios.create({
-  baseURL: WEATHER_BASE_URL,
-  params: {
-    appid: WEATHER_API_KEY,
-    units: 'metric'
-  },
-});
-
-// Weather API functions with proper error handling
+// Weather API
 export const weatherAPI = {
   getCurrentWeather: async (location: string) => {
-    try {
-      const response = await weatherClient.get(`/weather?q=${encodeURIComponent(location)}`);
-      return response;
-    } catch (error: any) {
-      console.error('Weather API Error:', error.response?.data || error.message);
-      throw error;
-    }
+    return fetchWithCache(
+      `weather_${location}`,
+      async () => {
+        const response = await axios.get(`${API_CONFIG.openWeather.baseUrl}/weather`, {
+          params: {
+            q: location,
+            appid: API_CONFIG.openWeather.apiKey,
+            units: 'metric'
+          }
+        });
+        return response.data;
+      },
+      1800000 // 30 minutes TTL for weather data
+    );
   },
   
-  getForecast: async (location: string) => {
-    try {
-      const response = await weatherClient.get(`/forecast?q=${encodeURIComponent(location)}`);
-      return response;
-    } catch (error: any) {
-      console.error('Forecast API Error:', error.response?.data || error.message);
-      throw error;
-    }
-  },
-  
-  getWeatherByCoords: async (lat: number, lon: number) => {
-    try {
-      const response = await weatherClient.get(`/weather?lat=${lat}&lon=${lon}`);
-      return response;
-    } catch (error: any) {
-      console.error('Weather by Coords API Error:', error.response?.data || error.message);
-      throw error;
-    }
-  },
-  
-  getForecastByCoords: async (lat: number, lon: number) => {
-    try {
-      const response = await weatherClient.get(`/forecast?lat=${lat}&lon=${lon}`);
-      return response;
-    } catch (error: any) {
-      console.error('Forecast by Coords API Error:', error.response?.data || error.message);
-      throw error;
-    }
-  },
-
-  getAirQuality: async (lat: number, lon: number) => {
-    try {
-      const response = await weatherClient.get(`/air_pollution?lat=${lat}&lon=${lon}`);
-      return response;
-    } catch (error: any) {
-      console.error('Air Quality API Error:', error.response?.data || error.message);
-      throw error;
-    }
+  getForecast: async (location: string, days: number = 7) => {
+    return fetchWithCache(
+      `forecast_${location}_${days}`,
+      async () => {
+        const response = await axios.get(`${API_CONFIG.openWeather.baseUrl}/forecast/daily`, {
+          params: {
+            q: location,
+            appid: API_CONFIG.openWeather.apiKey,
+            cnt: days,
+            units: 'metric'
+          }
+        });
+        return response.data;
+      },
+      10800000 // 3 hours TTL for forecast
+    );
   }
 };
 
-// AI Advisory functions for crop recommendations
-export const aiAdvisoryAPI = {
-  getCropRecommendations: async (data: {
-    location: string;
-    soilType: string;
-    season: string;
-    farmSize: number;
-    currentCrops?: string[];
-  }) => {
+// Agromonitoring API
+export const agromonitoringAPI = {
+  getSoilData: async (lat: number, lon: number) => {
+    return fetchWithCache(
+      `soil_${lat}_${lon}`,
+      async () => {
+        const response = await axios.get(`${API_CONFIG.agromonitoring.baseUrl}/soil`, {
+          params: {
+            lat,
+            lon,
+            appid: API_CONFIG.agromonitoring.apiKey
+          }
+        });
+        return response.data;
+      },
+      2592000000 // 30 days TTL for soil data
+    );
+  }
+};
+
+// LocationIQ API
+export const locationIqAPI = {
+  geocode: async (location: string) => {
+    return fetchWithCache(
+      `geocode_${location}`,
+      async () => {
+        const response = await axios.get(`${API_CONFIG.locationIq.baseUrl}/search.php`, {
+          params: {
+            q: location,
+            key: API_CONFIG.locationIq.apiKey,
+            format: 'json'
+          }
+        });
+        return response.data[0];
+      },
+      2592000000 // 30 days TTL for geocoding
+    );
+  },
+  
+  reverseGeocode: async (lat: number, lon: number) => {
+    return fetchWithCache(
+      `reverse_${lat}_${lon}`,
+      async () => {
+        const response = await axios.get(`${API_CONFIG.locationIq.baseUrl}/reverse.php`, {
+          params: {
+            lat,
+            lon,
+            key: API_CONFIG.locationIq.apiKey,
+            format: 'json'
+          }
+        });
+        return response.data;
+      },
+      2592000000 // 30 days TTL for reverse geocoding
+    );
+  }
+};
+
+// AI Advisory Service
+export const aiAdvisoryService = {
+  // Get crop recommendations with weather and location context
+  getCropRecommendations: async (location: string, soilType?: string) => {
     try {
-      // Get weather data for the location
-      const weatherResponse = await weatherAPI.getCurrentWeather(data.location);
-      const weather = weatherResponse.data;
+      // Get weather data
+      const weather = await weatherAPI.getCurrentWeather(location);
       
-      // AI-powered crop recommendations based on weather and location
-      const recommendations = generateCropRecommendations(data, weather);
-      
-      return { data: recommendations };
+      // Get crop recommendations from AI service
+      return await aiService.getCropRecommendations({
+        location,
+        soilType: soilType || 'loam',
+        weatherData: {
+          temp: weather.main.temp,
+          humidity: weather.main.humidity,
+          conditions: weather.weather[0].main
+        }
+      });
     } catch (error) {
       console.error('Error in getCropRecommendations:', error);
-      throw error;
+      // Return fallback recommendations
+      return aiService.getCropRecommendations({
+        location,
+        soilType: soilType || 'loam',
+        weatherData: { temp: 25, humidity: 60, conditions: 'Clear' }
+      });
     }
   },
-
-  getSoilAnalysis: async (data: {
-    location: string;
-    pH?: number;
-    nitrogen?: number;
-    phosphorus?: number;
-    potassium?: number;
-  }) => {
+  
+  // Detect plant diseases from image
+  detectPlantDisease: aiService.detectPlantDisease,
+  
+  // Get general farming advice
+  getFarmingAdvice: aiService.getFarmingAdvice,
+  
+  // Get soil analysis
+  getSoilAnalysis: async (location: string, soilType: string) => {
     try {
-      const weatherResponse = await weatherAPI.getCurrentWeather(data.location);
-      const weather = weatherResponse.data;
+      const locationData = await locationIqAPI.geocode(location);
+      const soilData = await agromonitoringAPI.getSoilData(locationData.lat, locationData.lon);
       
-      const analysis = generateSoilAnalysis(data, weather);
-      
-      return { data: analysis };
+      return {
+        location,
+        soilType: soilType || soilData.type || 'unknown',
+        analysis: {
+          moisture: soilData.moisture,
+          temperature: soilData.temp,
+          nutrients: soilData.nutrients,
+          ph: soilData.ph
+        },
+        recommendations: [
+          'Test soil every 2-3 years',
+          'Add organic matter regularly',
+          'Practice crop rotation',
+          'Consider cover crops during off-season'
+        ]
+      };
     } catch (error) {
       console.error('Error in getSoilAnalysis:', error);
-      throw error;
+      throw new Error('Unable to analyze soil data at this time');
     }
   },
-
+  
+  // Get irrigation advice
+  getIrrigationAdvice: async (location: string, cropType: string) => {
+    try {
+      const [weather, forecast] = await Promise.all([
+        weatherAPI.getCurrentWeather(location),
+        weatherAPI.getForecast(location, 3) // 3-day forecast
+      ]);
+      
+      return {
+        location,
+        cropType,
+        currentConditions: {
+          temperature: weather.main.temp,
+          humidity: weather.main.humidity,
+          lastRain: '2 days ago' // This would come from historical data
+        },
+        forecast: forecast.list.slice(0, 3).map((day: any) => ({
+          date: new Date(day.dt * 1000).toLocaleDateString(),
+          temp: day.temp.day,
+          humidity: day.humidity,
+          rain: day.rain || 0
+        })),
+        recommendations: [
+          `Water ${cropType} every 2-3 days during dry season`,
+          'Water early in the morning to reduce evaporation',
+          'Use mulch to retain soil moisture',
+          'Consider drip irrigation for water efficiency'
+        ]
+      };
+    } catch (error) {
+      console.error('Error in getIrrigationAdvice:', error);
+      throw new Error('Unable to provide irrigation advice at this time');
+    }
+  },
+  
+  // Get pest control advice
   getPestControl: async (data: {
     location: string;
     cropType: string;
     symptoms: string[];
   }) => {
     try {
-      const weatherResponse = await weatherAPI.getCurrentWeather(data.location);
-      const weather = weatherResponse.data;
-      
-      const pestControl = generatePestControlAdvice(data, weather);
-      
-      return { data: pestControl };
+      const weather = await weatherAPI.getCurrentWeather(data.location);
+      return await aiService.generatePestControlAdvice({
+        ...data,
+        weatherData: {
+          temp: weather.main.temp,
+          humidity: weather.main.humidity,
+          conditions: weather.weather[0].main
+        }
+      });
     } catch (error) {
       console.error('Error in getPestControl:', error);
-      throw error;
+      throw new Error('Unable to get pest control advice at this time');
     }
-  },
+  }
+};
 
-  getIrrigationAdvice: async (data: {
-    location: string;
-    cropType: string;
-    soilType: string;
-    farmSize: number;
-  }) => {
-    try {
-      const [weatherResponse, forecastResponse] = await Promise.all([
-        weatherAPI.getCurrentWeather(data.location),
-        weatherAPI.getForecast(data.location)
-      ]);
-      
-      const irrigation = generateIrrigationAdvice(data, weatherResponse.data, forecastResponse.data);
-      
-      return { data: irrigation };
-    } catch (error) {
-      console.error('Error in getIrrigationAdvice:', error);
-      throw error;
-    }
+// Export all services
+export default {
+  weather: weatherAPI,
+  soil: agromonitoringAPI,
+  location: locationIqAPI,
+  ai: aiAdvisoryService
+};
+
+// Enhanced crop categories and types
+export const cropCategories = {
+  cereals: {
+    name: 'Cereals & Grains',
+    crops: ['Maize', 'Rice', 'Wheat', 'Sorghum', 'Millet', 'Barley', 'Oats']
   },
+  legumes: {
+    name: 'Legumes & Pulses',
+    crops: ['Beans', 'Peas', 'Lentils', 'Chickpeas', 'Cowpeas', 'Soybeans', 'Groundnuts']
+  },
+  vegetables: {
+    name: 'Vegetables',
+    crops: ['Tomatoes', 'Onions', 'Cabbage', 'Kale', 'Spinach', 'Carrots', 'Peppers', 'Cucumbers']
+  },
+  fruits: {
+    name: 'Fruits',
+    crops: ['Bananas', 'Mangoes', 'Avocados', 'Oranges', 'Pineapples', 'Papayas', 'Passion Fruit']
+  },
+  tubers: {
+    name: 'Root & Tuber Crops',
+    crops: ['Irish Potatoes', 'Sweet Potatoes', 'Cassava', 'Yams', 'Arrowroots']
+  },
+  cash_crops: {
+    name: 'Cash Crops',
+    crops: ['Coffee', 'Tea', 'Cotton', 'Sugarcane', 'Tobacco', 'Pyrethrum']
+  },
+  herbs_spices: {
+    name: 'Herbs & Spices',
+    crops: ['Coriander', 'Ginger', 'Turmeric', 'Chili', 'Garlic', 'Basil']
+  }
+};
+
+export const getAllCrops = () => {
+  return Object.values(cropCategories).flatMap(category => category.crops);
 };
 
 // AI recommendation algorithms
@@ -310,7 +423,7 @@ function generateCropRecommendations(data: any, weather: any) {
 }
 
 function calculateProfitability(crop: string, farmSize: number, weather: any): string {
-  const baseProfits: Record<string, number> = {
+  const baseProfits = {
     maize: 50000, // KES per hectare
     beans: 80000,
     coffee: 150000,
@@ -373,7 +486,7 @@ function generatePestControlAdvice(data: any, weather: any) {
   const { location, cropType, symptoms } = data;
   const { main } = weather;
   
-  const commonPests: Record<string, any[]> = {
+  const commonPests = {
     maize: [
       {
         name: 'Fall Armyworm',
@@ -463,7 +576,7 @@ function generateIrrigationAdvice(data: any, currentWeather: any, forecast: any)
   const { location, cropType, soilType, farmSize } = data;
   const { main } = currentWeather;
   
-  const cropWaterNeeds: Record<string, any> = {
+  const cropWaterNeeds = {
     maize: { daily: 5, critical: ['tasseling', 'grain filling'] },
     beans: { daily: 3, critical: ['flowering', 'pod filling'] },
     coffee: { daily: 4, critical: ['flowering', 'berry development'] },
@@ -471,7 +584,7 @@ function generateIrrigationAdvice(data: any, currentWeather: any, forecast: any)
     cabbage: { daily: 4, critical: ['head formation'] }
   };
 
-  const soilWaterHolding: Record<string, any> = {
+  const soilWaterHolding = {
     clay: { capacity: 'high', drainage: 'poor', retentionDays: 7 },
     loam: { capacity: 'medium', drainage: 'good', retentionDays: 4 },
     sand: { capacity: 'low', drainage: 'excellent', retentionDays: 2 }
@@ -600,7 +713,7 @@ function getOptimalPlantingDate(crop: string, season: string, location: string):
 }
 
 function calculateExpectedYield(crop: string, farmSize: number, weather: any, soilType: string): string {
-  const baseYields: Record<string, number> = {
+  const baseYields = {
     maize: 2.5, // tons per hectare
     beans: 1.2,
     coffee: 0.8,
@@ -654,7 +767,7 @@ function calculateSoilHealth(pH: number, nitrogen: number, phosphorus: number, p
   return 'Poor';
 }
 
-// Export for use in other components
+// Crop and soil data for AI recommendations
 export const cropAPI = {
   getCropHistory: async () => {
     // Mock data for demo
