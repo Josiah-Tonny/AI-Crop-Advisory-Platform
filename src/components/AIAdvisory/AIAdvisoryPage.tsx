@@ -3,7 +3,7 @@ import { Brain, Lightbulb, TrendingUp, Users, Sprout, CloudRain, TestTube, Bug, 
 import SearchInterface from './SearchInterface';
 import ResultsDisplay from './ResultsDisplay';
 import { SearchQuery } from '../../types';
-import { weatherAPI, aiAdvisoryAPI } from '../../services/api';
+import { aiAdvisoryService } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const AIAdvisoryPage: React.FC = () => {
@@ -22,8 +22,8 @@ const AIAdvisoryPage: React.FC = () => {
       switch (query.queryType) {
         case 'weather':
           const [currentWeather, forecast] = await Promise.all([
-            weatherAPI.getCurrentWeather(query.location),
-            weatherAPI.getForecast(query.location)
+            aiAdvisoryService.getCurrentWeather(query.location),
+            aiAdvisoryService.getForecast(query.location)
           ]);
           response = {
             current: currentWeather.data,
@@ -32,7 +32,7 @@ const AIAdvisoryPage: React.FC = () => {
           break;
 
         case 'crop-recommendation':
-          response = await aiAdvisoryAPI.getCropRecommendations({
+          response = await aiAdvisoryService.getCropRecommendations({
             location: query.location,
             soilType: query.soilType || 'loam',
             season: query.season || 'Long Rains (March-May)',
@@ -43,7 +43,7 @@ const AIAdvisoryPage: React.FC = () => {
           break;
 
         case 'soil-analysis':
-          response = await aiAdvisoryAPI.getSoilAnalysis({
+          response = await aiAdvisoryService.getSoilAnalysis({
             location: query.location,
             pH: query.additionalParams?.pH,
             nitrogen: query.additionalParams?.nitrogen,
@@ -54,7 +54,7 @@ const AIAdvisoryPage: React.FC = () => {
           break;
 
         case 'pest-control':
-          response = await aiAdvisoryAPI.getPestControl({
+          response = await aiAdvisoryService.getPestControl({
             location: query.location,
             cropType: query.cropType || 'maize',
             symptoms: query.additionalParams?.symptoms?.split(',').map((s: string) => s.trim()) || []
@@ -63,7 +63,7 @@ const AIAdvisoryPage: React.FC = () => {
           break;
 
         case 'irrigation':
-          response = await aiAdvisoryAPI.getIrrigationAdvice({
+          response = await aiAdvisoryService.getIrrigationAdvice({
             location: query.location,
             cropType: query.cropType || 'maize',
             soilType: query.soilType || 'loam',
