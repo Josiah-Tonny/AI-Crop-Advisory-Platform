@@ -1,166 +1,264 @@
+// Weather Types
 export interface WeatherData {
-  location: {
-    name: string;
-    region: string;
-    country: string;
-    lat: number;
-    lon: number;
-  };
-  current: {
-    temp_c: number;
-    temp_f: number;
-    condition: {
-      text: string;
-      icon: string;
+  location: string;
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  windDirection: string;
+  pressure: number;
+  visibility: number;
+  uvIndex: number;
+  condition: string;
+  icon: string;
+  airQuality: {
+    aqi: number;
+    level: string;
+    pollutants: {
+      pm25: number;
+      pm10: number;
+      o3: number;
+      no2: number;
+      so2: number;
+      co: number;
     };
-    wind_kph: number;
-    wind_dir: string;
-    pressure_mb: number;
-    humidity: number;
-    cloud: number;
-    feelslike_c: number;
-    vis_km: number;
-    uv: number;
-    dewpoint_c: number;
   };
+  forecast: WeatherForecast[];
 }
 
-export interface ForecastData {
-  location: WeatherData['location'];
-  current: WeatherData['current'];
-  forecast: {
-    forecastday: Array<{
-      date: string;
-      day: {
-        maxtemp_c: number;
-        mintemp_c: number;
-        avgtemp_c: number;
-        totalprecip_mm: number;
-        avghumidity: number;
-        daily_chance_of_rain: number;
-        condition: {
-          text: string;
-          icon: string;
-        };
-      };
-      hour: Array<{
-        time: string;
-        temp_c: number;
-        condition: {
-          text: string;
-          icon: string;
-        };
-        chance_of_rain: number;
-      }>;
-    }>;
-  };
-  alerts?: {
-    alert: Array<{
-      headline: string;
-      desc: string;
-      effective: string;
-      expires: string;
-    }>;
-  };
+export interface WeatherForecast {
+  date: string;
+  day: string;
+  high: number;
+  low: number;
+  condition: string;
+  icon: string;
+  humidity: number;
+  windSpeed: number;
+  precipitation: number;
+  precipitationChance: number;
 }
 
+// Crop Types
 export interface CropRecommendation {
+  id: string;
   name: string;
+  category: string;
   suitability: number;
-  plantingDate: string;
+  plantingTime: string;
+  harvestTime: string;
   expectedYield: string;
-  requirements: {
-    rainfall: string;
-    temperature: string;
-    soilPH: string;
-    fertilizer: string;
-  };
+  profitability: string;
+  waterRequirement: string;
+  soilType: string;
+  climateRequirement: string;
   tips: string[];
+  image: string;
+  marketPrice: {
+    current: number;
+    trend: 'up' | 'down' | 'stable';
+    currency: string;
+  };
 }
 
+export interface CropCategory {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  crops: string[];
+}
+
+// Soil Types
 export interface SoilAnalysis {
   location: string;
-  testDate: string;
-  results: {
-    pH: {
-      value: number;
-      status: string;
-      recommendation: string;
-    };
-    nitrogen: {
-      value: number;
-      status: string;
-      recommendation: string;
-    };
-    phosphorus: {
-      value: number;
-      status: string;
-      recommendation: string;
-    };
-    potassium: {
-      value: number;
-      status: string;
-      recommendation: string;
-    };
-  };
-  overallHealth: string;
-  recommendations: string[];
+  ph: number;
+  nitrogen: number;
+  phosphorus: number;
+  potassium: number;
+  organicMatter: number;
+  moisture: number;
+  temperature: number;
+  salinity: number;
+  healthScore: number;
+  recommendations: SoilRecommendation[];
+  lastUpdated: string;
 }
 
-export interface PestControlAdvice {
-  location: string;
-  cropType: string;
-  weatherConditions: {
-    temperature: number;
-    humidity: number;
-    riskLevel: string;
+export interface SoilRecommendation {
+  type: 'fertilizer' | 'amendment' | 'irrigation' | 'cultivation';
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  timeframe: string;
+  cost: string;
+}
+
+// Pest Control Types
+export interface PestRisk {
+  pestName: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  affectedCrops: string[];
+  symptoms: string[];
+  prevention: string[];
+  treatment: {
+    organic: string[];
+    chemical: string[];
   };
-  identifiedPests: Array<{
+  seasonality: string;
+  weatherFactors: string[];
+}
+
+// Irrigation Types
+export interface IrrigationSchedule {
+  date: string;
+  day: string;
+  waterAmount: number;
+  duration: number;
+  method: string;
+  priority: 'low' | 'medium' | 'high';
+  weatherCondition: string;
+  soilMoisture: number;
+  evapotranspiration: number;
+}
+
+export interface IrrigationMethod {
+  name: string;
+  efficiency: number;
+  waterSaving: number;
+  cost: string;
+  suitability: string[];
+  pros: string[];
+  cons: string[];
+}
+
+// Education Types
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  instructor: string;
+  duration: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  category: string;
+  rating: number;
+  students: number;
+  thumbnail: string;
+  lessons: number;
+  price: number;
+  tags: string[];
+}
+
+export interface Resource {
+  id: string;
+  title: string;
+  type: 'pdf' | 'video' | 'calculator' | 'guide';
+  description: string;
+  category: string;
+  downloadUrl: string;
+  size: string;
+  downloads: number;
+  rating: number;
+  thumbnail: string;
+}
+
+// Community Types
+export interface ForumPost {
+  id: string;
+  title: string;
+  content: string;
+  author: {
     name: string;
-    symptoms: string[];
-    treatment: string;
-    prevention: string;
-  }>;
-  generalAdvice: string[];
-  weatherBasedAdvice: string;
+    avatar: string;
+    reputation: number;
+    location: string;
+  };
+  category: string;
+  tags: string[];
+  replies: number;
+  views: number;
+  likes: number;
+  createdAt: string;
+  lastReply: string;
+  isAnswered: boolean;
+  isPinned: boolean;
 }
 
-export interface IrrigationAdvice {
+export interface Expert {
+  id: string;
+  name: string;
+  title: string;
+  specialization: string[];
+  experience: string;
+  rating: number;
+  consultations: number;
+  avatar: string;
   location: string;
-  cropType: string;
-  soilType: string;
-  currentConditions: {
+  languages: string[];
+  availability: 'available' | 'busy' | 'offline';
+  hourlyRate: number;
+}
+
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  type: 'workshop' | 'webinar' | 'field-day' | 'conference';
+  date: string;
+  time: string;
+  duration: string;
+  location: string;
+  isOnline: boolean;
+  organizer: string;
+  attendees: number;
+  maxAttendees: number;
+  price: number;
+  image: string;
+  tags: string[];
+}
+
+// API Response Types
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}
+
+// Location Types
+export interface Location {
+  latitude: number;
+  longitude: number;
+  city: string;
+  country: string;
+  region: string;
+}
+
+// Dashboard Types
+export interface DashboardStats {
+  totalFarms: number;
+  activeCrops: number;
+  weatherAlerts: number;
+  pendingTasks: number;
+  recentActivities: Activity[];
+  weatherSummary: {
     temperature: number;
+    condition: string;
     humidity: number;
-    lastRain: string;
+    rainfall: number;
   };
-  weeklyForecast: {
-    expectedRainfall: number;
-    irrigationNeeded: number;
-    recommendation: string;
+  cropHealth: {
+    healthy: number;
+    warning: number;
+    critical: number;
   };
-  irrigationSchedule: Array<{
-    date: string;
-    rainExpected: number;
-    irrigationNeeded: boolean;
-    amount: string;
-    timing: string;
-  }>;
-  methods: Array<{
-    name: string;
-    efficiency: string;
-    suitability: string;
-    cost: string;
-  }>;
-  tips: string[];
 }
 
-export interface SearchQuery {
-  location: string;
-  cropType?: string;
-  soilType?: string;
-  season?: string;
-  farmSize?: number;
-  queryType: 'crop-recommendation' | 'soil-analysis' | 'pest-control' | 'irrigation' | 'weather';
-  additionalParams?: Record<string, any>;
+export interface Activity {
+  id: string;
+  type: 'weather' | 'crop' | 'soil' | 'pest' | 'irrigation';
+  title: string;
+  description: string;
+  timestamp: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'completed' | 'pending' | 'in-progress';
 }
