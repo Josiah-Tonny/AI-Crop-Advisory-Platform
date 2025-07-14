@@ -249,9 +249,9 @@ const RegisterPage: React.FC = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="">Select farm size</option>
-                <option value="small">Small (< 1 hectare)</option>
+                <option value="small">Small (&lt; 1 hectare)</option>
                 <option value="medium">Medium (1-5 hectares)</option>
-                <option value="large">Large (> 5 hectares)</option>
+                <option value="large">Large (&gt; 5 hectares)</option>
               </select>
             </div>
 
