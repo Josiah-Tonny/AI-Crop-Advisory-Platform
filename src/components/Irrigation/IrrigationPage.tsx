@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { getWeatherData } from '../../services/api';
+import { weatherService } from '../../services/api';
 
 interface WeatherData {
   temperature: number;
@@ -47,14 +47,20 @@ const IrrigationPage: React.FC = () => {
   const fetchWeatherData = async () => {
     try {
       setLoading(true);
-      const data = await getWeatherData(location);
-      setWeatherData({
-        temperature: Math.round(data.main.temp),
-        humidity: data.main.humidity,
-        precipitation: data.rain?.['1h'] || 0,
-        windSpeed: data.wind.speed,
-        description: data.weather[0].description
-      });
+      // First get coordinates from location string
+      const locationData = await weatherService.searchLocation(location);
+      if (locationData.length > 0) {
+        const { lat, lon } = locationData[0];
+        const response = await weatherService.getCurrentWeather(lat, lon);
+        const data = response.data;
+        setWeatherData({
+          temperature: Math.round(data.main.temp),
+          humidity: data.main.humidity,
+          precipitation: data.rain?.['1h'] || 0,
+          windSpeed: data.wind.speed,
+          description: data.weather[0].description
+        });
+      }
     } catch (error) {
       console.error('Error fetching weather data:', error);
     } finally {
