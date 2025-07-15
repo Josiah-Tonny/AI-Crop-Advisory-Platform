@@ -8,7 +8,7 @@ import {
   BarChart3,
   MapPin
 } from 'lucide-react';
-import { soilAPI } from '../../services/api';
+import { soilService } from '../../services/api';
 
 const SoilPage: React.FC = () => {
   const [soilAnalyses, setSoilAnalyses] = useState<any[]>([]);
@@ -18,7 +18,7 @@ const SoilPage: React.FC = () => {
   useEffect(() => {
     const fetchSoilData = async () => {
       try {
-        const response = await soilAPI.getSoilHistory();
+        const response = await soilService.getSoilHistory();
         setSoilAnalyses(response.data);
       } catch (error) {
         console.error('Error fetching soil data:', error);
