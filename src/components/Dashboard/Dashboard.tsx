@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import StatsCard from './StatsCard';
 import { useAuth } from '../../contexts/AuthContext';
-import { weatherAPI } from '../../services/api';
+import { weatherService } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
@@ -31,8 +31,13 @@ const Dashboard: React.FC = () => {
     const fetchWeatherData = async () => {
       if (user?.location) {
         try {
-          const response = await weatherAPI.getCurrentWeather(user.location);
-          setWeatherData(response.data);
+          // First get coordinates from location string
+          const locationData = await weatherService.searchLocation(user.location);
+          if (locationData.length > 0) {
+            const { lat, lon } = locationData[0];
+            const response = await weatherService.getCurrentWeather(lat, lon);
+            setWeatherData(response.data);
+          }
         } catch (error) {
           console.error('Error fetching weather data:', error);
         } finally {

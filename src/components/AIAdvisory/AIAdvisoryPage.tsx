@@ -3,7 +3,7 @@ import { Brain, Lightbulb, TrendingUp, Users, Sprout, CloudRain, TestTube, Bug, 
 import SearchInterface from './SearchInterface';
 import ResultsDisplay from './ResultsDisplay';
 import { SearchQuery } from '../../types';
-import { aiAdvisoryService } from '../../services/api';
+import aiAdvisoryService from '../../services/aiService';
 import toast from 'react-hot-toast';
 
 const AIAdvisoryPage: React.FC = () => {
