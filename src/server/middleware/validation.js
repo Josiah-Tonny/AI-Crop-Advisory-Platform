@@ -26,8 +26,19 @@ const validateRegistration = (req, res, next) => {
   }
 
   // Phone validation (optional)
-  if (req.body.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(req.body.phone)) {
-    errors.push('Please enter a valid phone number');
+  if (req.body.phone) {
+    // Remove all non-digit characters except leading +
+    const cleanedPhone = req.body.phone.replace(/[^\d+]/g, '');
+    
+    // Check if it's a valid international or local number
+    // International format: + followed by 10-15 digits (including country code)
+    // Local format: 10-15 digits (no +)
+    if (!/^(\+?\d{10,15})$/.test(cleanedPhone)) {
+      errors.push('Please enter a valid phone number (e.g., +254114470768 or 0114470768)');
+    } else {
+      // Store cleaned phone number in the request for later use
+      req.body.phone = cleanedPhone;
+    }
   }
 
   console.log('Validation errors:', errors);

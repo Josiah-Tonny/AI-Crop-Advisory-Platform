@@ -9,15 +9,37 @@ export const API_CONFIG = {
     API_KEY: import.meta.env.VITE_OPENWEATHER_API_KEY,
   },
   
+  // Request Configuration
+  REQUEST_CONFIG: {
+    TIMEOUT: 30000, // 30 seconds
+    RETRY_ATTEMPTS: 3,
+    RETRY_DELAY: 1000, // 1 second
+  },
+  
+  // Database Configuration
+  DATABASE: {
+    CONNECTION_STRING: import.meta.env.MONGODB_CONNECTION_STRING,
+  },
+  
+  // Default error messages
+  ERROR_MESSAGES: {
+    NETWORK_ERROR: 'Unable to connect to the server. Please check your internet connection.',
+    SERVER_ERROR: 'Something went wrong on our end. Please try again later.',
+    UNAUTHORIZED: 'Your session has expired. Please log in again.',
+    FORBIDDEN: 'You do not have permission to perform this action.',
+    NOT_FOUND: 'The requested resource was not found.',
+    VALIDATION_ERROR: 'Please check your input and try again.',
+  },
+  
   // Backend Endpoints
   ENDPOINTS: {
     // Authentication
     AUTH: {
-      LOGIN: '/auth/login',
-      REGISTER: '/auth/register',
+      LOGIN: '/v1/auth/login',
+      REGISTER: '/v1/auth/register',
       LOGOUT: '/auth/logout',
       REFRESH: '/auth/refresh',
-      PROFILE: '/auth/profile',
+      PROFILE: '/v1/auth/profile',
     },
     
     // Weather
@@ -99,35 +121,28 @@ export const API_CONFIG = {
     },
   },
   
-  // Request Configuration
-  REQUEST_CONFIG: {
-    TIMEOUT: 30000, // 30 seconds
-    RETRY_ATTEMPTS: 3,
-    RETRY_DELAY: 1000, // 1 second
+  // Helper function to build full endpoint URLs
+  buildUrl: (endpoint: string, params?: Record<string, string>): string => {
+    let url = `${API_CONFIG.BASE_URL}${endpoint}`;
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url = url.replace(`:${key}`, encodeURIComponent(value));
+      });
+    }
+    
+    return url;
   },
   
-  // Database Configuration
-  DATABASE: {
-    CONNECTION_STRING: import.meta.env.MONGODB_CONNECTION_STRING,
+  // Helper function to get full API URL
+  getFullUrl: (endpoint: string): string => {
+    return `${API_CONFIG.BASE_URL}${endpoint}`;
   },
-};
-
-// Helper function to build full endpoint URLs
-export const buildEndpointUrl = (endpoint: string, params?: Record<string, string>) => {
-  let url = `${API_CONFIG.BASE_URL}${endpoint}`;
   
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      url = url.replace(`:${key}`, value);
-    });
-  }
-  
-  return url;
-};
-
-// Helper function to get weather API URL
-export const getWeatherApiUrl = (endpoint: string) => {
-  return `${API_CONFIG.WEATHER.BASE_URL}${endpoint}?appid=${API_CONFIG.WEATHER.API_KEY}`;
+  // Helper function to get weather API URL
+  getWeatherApiUrl: (endpoint: string) => {
+    return `${API_CONFIG.WEATHER.BASE_URL}${endpoint}?appid=${API_CONFIG.WEATHER.API_KEY}`;
+  },
 };
 
 export default API_CONFIG;

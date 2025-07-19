@@ -46,8 +46,9 @@ class AuthService {
   // Register new user
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
-      console.log('Sending registration data:', userData); // Log the data being sent
-      const response = await this.api.post('/auth/register', userData);
+      console.log('Sending registration data:', userData);
+      // Updated to use the correct endpoint path with /v1
+      const response = await this.api.post('/v1/auth/register', userData);
       return {
         success: true,
         message: response.data.message,
@@ -65,10 +66,7 @@ class AuthService {
           data: error.config?.data
         }
       });
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Registration failed. Please try again.'
-      };
+      throw new Error(error.response?.data?.message || 'Registration failed. Please try again.');
     }
   }
 

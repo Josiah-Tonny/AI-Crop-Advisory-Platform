@@ -49,42 +49,38 @@ const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
     setLoading(true);
 
-    // Prepare the registration data with proper types
-    const registrationData = {
-      firstName: formData.firstName.trim(),
-      lastName: formData.lastName.trim(),
-      email: formData.email.trim(),
-      password: formData.password,
-      phone: formData.phone.trim(),
-      location: formData.location.trim(),
-      farmSize: 'small', // Default to 'small' as required by the enum
-      cropTypes: formData.cropTypes
-    };
+    // Basic validation
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const success = await register(registrationData);
+      const userData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        location: formData.location,
+        farmSize: formData.farmSize,
+        cropTypes: formData.cropTypes
+      };
+
+      const success = await register(userData);
+      
       if (success) {
-        toast.success('Registration successful! Please check your email for verification.');
-        navigate('/verify-otp', { state: { email: formData.email } });
+        toast.success('Registration successful! Please log in.');
+        navigate('/login');
       } else {
         toast.error('Registration failed. Please try again.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error('Registration failed. Please try again.');
+      toast.error(error.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

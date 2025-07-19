@@ -26,18 +26,28 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!formData.email || !formData.password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const success = await login(formData.email, formData.password);
+      
       if (success) {
         toast.success('Login successful!');
+        // Redirect to dashboard after successful login
         navigate('/dashboard');
       } else {
         toast.error('Invalid email or password');
       }
-    } catch (error) {
-      toast.error('Login failed. Please try again.');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error(error.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

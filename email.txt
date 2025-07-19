@@ -1,0 +1,47 @@
+
+im not getting the code
+check my stmp and make sure its working accordingly, check for any errors im not seeing@.env @.env 
+im not getting the code in my email
+@.  im using Gmail as my Email service
+
+Revert
+Let me help you check your SMTP configuration and email sending functionality. I'll start by examining your environment files and relevant code.
+
+First, let's look at both .env files to check your SMTP settings:
+
+Cascade error
+Access to d:\Projects\AI Advisory\.env is prohibited by d:\Projects\AI Advisory\.gitignore
+I see that the .env file is gitignored for security reasons. Let's check the server's .env file instead:
+
+Cascade error
+Access to d:\Projects\AI Advisory\server\.env is prohibited by d:\Projects\AI Advisory\.gitignore
+I understand that the .env files are gitignored for security, which is a good practice. Let's troubleshoot your SMTP/email issues. Here are the common issues and solutions when using Gmail SMTP:
+
+App Password Requirement:
+Gmail no longer allows using your regular password for SMTP
+You need to generate an "App Password" from your Google Account
+Go to: https://myaccount.google.com/security
+Enable 2-Step Verification if not already enabled
+Then generate an App Password for your application
+SMTP Configuration: Your .env file should have these variables (don't share the actual values):
+EMAIL_SERVICE=gmail
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password  # NOT your Gmail password
+EMAIL_FROM=your-email@gmail.com
+Less Secure Apps:
+Make sure to enable "Less secure app access" in your Google Account settings
+Or better, use OAuth2 for more security
+Common Issues:
+Incorrect port (use 587 for TLS)
+Missing or incorrect authentication
+Gmail blocking sign-in attempts
+Testing:
+Check your spam folder
+Look for any error messages in your server logs
+Try sending a test email using a simple Node.js script
+Could you:
+
+Confirm if you've generated an App Password?
+Share the relevant code where you're sending the email (without sensitive info)?
+Check your server logs for any error messages when trying to send an email?
+This will help me provide more specific guidance to resolve your email delivery issues.

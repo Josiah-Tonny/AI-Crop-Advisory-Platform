@@ -42,27 +42,18 @@ router.post('/register', validateRegistration, async (req, res) => {
       phone: phone?.trim(),
       location: location?.trim(),
       farmSize: farmSize || 'small',
-      cropTypes: cropTypes || []
+      cropTypes: cropTypes || [],
+      isVerified: true  // Automatically verify user on registration
     });
 
-    // Generate and save OTP
-    const otpCode = user.generateOTP();
+    // Save user without OTP
     await user.save();
 
-    console.log('User created successfully:', { userId: user._id, email: user.email });
-
-    // Send OTP email
-    try {
-      await sendOTPEmail(user.email, otpCode, user.firstName);
-      console.log(`✅ OTP sent to ${user.email}: ${otpCode}`);
-    } catch (emailError) {
-      console.error('❌ Failed to send OTP email:', emailError);
-      // Don't fail registration if email fails, but log it
-    }
+    console.log('User created and verified successfully:', { userId: user._id, email: user.email });
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. Please check your email for OTP verification.',
+      message: 'Registration successful. You can now log in.',
       user: {
         id: user._id,
         email: user.email,
