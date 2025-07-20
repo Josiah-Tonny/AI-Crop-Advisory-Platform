@@ -1,4 +1,4 @@
-const validateRegistration = (req, res, next) => {
+export const validateRegistration = (req, res, next) => {
   const { email, password, firstName, lastName } = req.body;
   const errors = [];
 
@@ -35,10 +35,8 @@ const validateRegistration = (req, res, next) => {
     // Local format: 10-15 digits (no +)
     if (!/^(\+?\d{10,15})$/.test(cleanedPhone)) {
       errors.push('Please enter a valid phone number (e.g., +254114470768 or 0114470768)');
-    } else {
-      // Store cleaned phone number in the request for later use
-      req.body.phone = cleanedPhone;
     }
+    // Note: Don't modify req.body.phone here to avoid read-only property issues
   }
 
   console.log('Validation errors:', errors);
@@ -53,7 +51,7 @@ const validateRegistration = (req, res, next) => {
   next();
 };
 
-const validateLogin = (req, res, next) => {
+export const validateLogin = (req, res, next) => {
   const { email, password } = req.body;
   const errors = [];
 
@@ -75,18 +73,20 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
-const validateOTP = (req, res, next) => {
+export const validateOTP = (req, res, next) => {
   const { email, otp } = req.body;
   const errors = [];
 
   if (!email || !email.trim()) {
     errors.push('Email is required');
+  } else if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+    errors.push('Please enter a valid email address');
   }
 
   if (!otp || !otp.trim()) {
     errors.push('OTP is required');
-  } else if (!/^AGRI-\d{6}$/.test(otp)) {
-    errors.push('Invalid OTP format. Expected format: AGRI-123456');
+  } else if (!/^\d{6}$/.test(otp)) {
+    errors.push('OTP must be a 6-digit number');
   }
 
   if (errors.length > 0) {
@@ -99,7 +99,7 @@ const validateOTP = (req, res, next) => {
   next();
 };
 
-module.exports = {
+export default {
   validateRegistration,
   validateLogin,
   validateOTP

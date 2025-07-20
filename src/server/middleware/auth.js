@@ -1,37 +1,40 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 // Verify access token
-exports.authenticate = async (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   try {
-    // Get token from Authorization header
+    let token;
+    
+    // Get token from Authorization header first
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token provided or invalid token format'
-      });
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
     }
-
-    const token = authHeader.split(' ')[1];
+    
+    // If no Bearer token, try to get from cookies
+    if (!token && req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+    
     if (!token) {
       return res.status(401).json({
-        success: false,
+        status: 'error',
         message: 'No token provided'
       });
     }
 
-    // Verify token
+    // Verify token - use the same JWT_SECRET as in auth routes
     const decoded = jwt.verify(
       token,
-      process.env.ACCESS_TOKEN_SECRET || 'your-access-token-secret'
+      process.env.JWT_SECRET
     );
 
     // Find user and attach to request
     const user = await User.findById(decoded.userId).select('-password -refreshToken -__v');
     if (!user) {
       return res.status(401).json({
-        success: false,
+        status: 'error',
         message: 'User not found'
       });
     }
@@ -39,7 +42,7 @@ exports.authenticate = async (req, res, next) => {
     // Check if user is active
     if (!user.isActive) {
       return res.status(403).json({
-        success: false,
+        status: 'error',
         message: 'User account is deactivated'
       });
     }
@@ -49,53 +52,20 @@ exports.authenticate = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired',
-        expired: true
-      });
-    }
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token'
-      });
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Authentication failed'
+    return res.status(401).json({
+      status: 'error',
+      message: 'Invalid or expired token'
     });
   }
-};
-
-// Check if user is admin
-exports.isAdmin = (req, res, next) => {
-  if (!req.user.isAdmin) {
-    return res.status(403).json({
-      success: false,
-      message: 'Access denied. Admin privileges required.'
-    });
-  }
-  next();
 };
 
 // Check if user is verified
-exports.isVerified = (req, res, next) => {
-  if (!req.user.isVerified) {
-    return res.status(403).json({
-      success: false,
-      message: 'Please verify your email address first'
-    });
+export const isVerified = (req, res, next) => {
+  if (req.user && req.user.isVerified) {
+    return next();
   }
-  next();
-};
-
-module.exports = {
-  authenticate: exports.authenticate,
-  isAdmin: exports.isAdmin,
-  isVerified: exports.isVerified
+  return res.status(403).json({
+    status: 'error',
+    message: 'Please verify your email address to access this resource.'
+  });
 };

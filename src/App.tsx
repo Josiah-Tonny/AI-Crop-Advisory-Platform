@@ -6,7 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 // Auth Components
 import LoginPage from './components/Auth/LoginPage';
 import RegisterPage from './components/Auth/RegisterPage';
-import OTPVerification from './components/Auth/OTPVerification';
+
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Main Components
@@ -21,6 +21,8 @@ import IrrigationPage from './components/Irrigation/IrrigationPage';
 import AIAdvisoryPage from './components/AIAdvisory/AIAdvisoryPage';
 import EducationPage from './components/Education/EducationPage';
 import CommunityPage from './components/Community/CommunityPage';
+import ProfilePage from './components/Profile/ProfilePage';
+import SettingsPage from './components/Settings/SettingsPage';
 
 function App() {
   return (
@@ -57,7 +59,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/verify-otp" element={<OTPVerification />} />
+
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={
@@ -128,6 +130,22 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <CommunityPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ProfilePage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Layout>
+                  <SettingsPage />
                 </Layout>
               </ProtectedRoute>
             } />

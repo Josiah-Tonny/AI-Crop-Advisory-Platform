@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -31,10 +31,33 @@ const userSchema = new mongoose.Schema({
     validate: {
       validator: function(v) {
         // Accepts international format (+254...) or local format (07... or 01...)
-        return /^(\+\d{1,3}[- ]?)?\d{9,15}$/.test(v);
+        return !v || /^(\+\d{1,3}[- ]?)?\d{9,15}$/.test(v);
       },
       message: props => `${props.value} is not a valid phone number!`
     }
+  },
+  location: {
+    type: String,
+    trim: true
+  },
+  farmSize: {
+    type: String,
+    enum: ['small', 'medium', 'large', ''],
+    default: ''
+  },
+  cropTypes: [{
+    type: String,
+    trim: true
+  }],
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'expert'],
+    default: 'user'
+  },
+  subscriptionTier: {
+    type: String,
+    enum: ['free', 'premium', 'enterprise'],
+    default: 'free'
   },
   password: {
     type: String,
@@ -49,10 +72,6 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  },
-  isAdmin: {
-    type: Boolean,
-    default: false
   },
   lastLogin: {
     type: Date
@@ -132,11 +151,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 // Generate access token
 userSchema.methods.generateAccessToken = function() {
   return jwt.sign(
-    { 
-      userId: this._id,
-      email: this.email,
-      isAdmin: this.isAdmin 
-    },
+    { userId: this._id },
     process.env.ACCESS_TOKEN_SECRET || 'your-access-token-secret',
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '15m' }
   );
@@ -153,44 +168,13 @@ userSchema.methods.generateRefreshToken = function() {
 
 // Update last login timestamp
 userSchema.methods.updateLastLogin = async function() {
-  this.lastLogin = new Date();
+  this.lastLogin = Date.now();
   await this.save();
 };
 
-// Static method to create default admin user
-userSchema.statics.createDefaultAdmin = async function() {
-  try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@1234';
-    
-    const existingAdmin = await this.findOne({ email: adminEmail });
-    
-    if (!existingAdmin) {
-      const admin = new this({
-        firstName: 'Admin',
-        lastName: 'User',
-        email: adminEmail,
-        password: adminPassword,
-        isVerified: true,
-        isAdmin: true
-      });
-      
-      await admin.save();
-      console.log('✅ Default admin user created');
-    } else if (!existingAdmin.isAdmin) {
-      existingAdmin.isAdmin = true;
-      await existingAdmin.save();
-      console.log('✅ Existing user promoted to admin');
-    }
-  } catch (error) {
-    console.error('❌ Error creating default admin:', error);
-  }
-};
-
 // Indexes
-userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ phone: 1 }, { sparse: true });
 
 const User = mongoose.model('User', userSchema);
 
-module.exports = User;
+export default User;

@@ -47,12 +47,19 @@ class AuthService {
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
       console.log('Sending registration data:', userData);
-      // Updated to use the correct endpoint path with /v1
       const response = await this.api.post('/v1/auth/register', userData);
+      
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          message: response.data.message,
+          user: response.data.data?.user
+        };
+      }
+      
       return {
-        success: true,
-        message: response.data.message,
-        user: response.data.user
+        success: false,
+        message: response.data.message || 'Registration failed. Please try again.'
       };
     } catch (error: any) {
       console.error('Registration error:', {
@@ -66,25 +73,36 @@ class AuthService {
           data: error.config?.data
         }
       });
-      throw new Error(error.response?.data?.message || 'Registration failed. Please try again.');
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Registration failed. Please try again.'
+      };
     }
   }
 
   // Login user
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await this.api.post('/auth/login', credentials);
+      const response = await this.api.post('/v1/auth/login', credentials, {
+        withCredentials: true // Important for sending/receiving cookies
+      });
       
-      if (response.data.success && response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      if (response.data.status === 'success' && response.data.data?.user) {
+        // Store minimal user data in localStorage
+        const { id, email, firstName, lastName, role } = response.data.data.user;
+        const userData = { id, email, firstName, lastName, role };
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        return {
+          success: true,
+          message: response.data.message,
+          user: response.data.data.user
+        };
       }
       
       return {
-        success: true,
-        message: response.data.message,
-        user: response.data.user,
-        token: response.data.token
+        success: false,
+        message: response.data.message || 'Login failed. Please try again.'
       };
     } catch (error: any) {
       console.error('Login error:', error);
@@ -98,11 +116,11 @@ class AuthService {
   // Send OTP for verification
   async sendOTP(email: string): Promise<OTPResponse> {
     try {
-      const response = await this.api.post('/auth/send-otp', { email });
+      const response = await this.api.post('/v1/auth/send-otp', { email });
       return {
-        success: true,
+        success: response.data.status === 'success',
         message: response.data.message,
-        otpSent: response.data.otpSent
+        otpSent: response.data.status === 'success'
       };
     } catch (error: any) {
       console.error('Send OTP error:', error);
@@ -116,18 +134,18 @@ class AuthService {
   // Verify OTP
   async verifyOTP(otpData: OTPVerification): Promise<AuthResponse> {
     try {
-      const response = await this.api.post('/auth/verify-otp', otpData);
+      const response = await this.api.post('/v1/auth/verify-otp', otpData);
       
-      if (response.data.success && response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          message: response.data.message
+        };
       }
       
       return {
-        success: true,
-        message: response.data.message,
-        user: response.data.user,
-        token: response.data.token
+        success: false,
+        message: response.data.message || 'OTP verification failed. Please try again.'
       };
     } catch (error: any) {
       console.error('OTP verification error:', error);
@@ -159,13 +177,32 @@ class AuthService {
   // Get user profile
   async getProfile(): Promise<{ success: boolean; user?: User; message?: string }> {
     try {
-      const response = await this.api.get('/auth/profile');
+      const response = await this.api.get('/v1/auth/profile', {
+        withCredentials: true // Important for sending cookies
+      });
+      
+      if (response.data.status === 'success' && response.data.data?.user) {
+        // Update local storage with fresh user data
+        const { id, email, firstName, lastName, role } = response.data.data.user;
+        const userData = { id, email, firstName, lastName, role };
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        return {
+          success: true,
+          user: response.data.data.user
+        };
+      }
+      
       return {
-        success: true,
-        user: response.data.user
+        success: false,
+        message: response.data.message || 'Failed to fetch profile'
       };
     } catch (error: any) {
       console.error('Get profile error:', error);
+      // If unauthorized, clear local storage
+      if (error.response?.status === 401) {
+        this.logout();
+      }
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to get user profile'
@@ -176,7 +213,7 @@ class AuthService {
   // Update user profile
   async updateProfile(userData: Partial<User>): Promise<{ success: boolean; user?: User; message?: string }> {
     try {
-      const response = await this.api.put('/users/profile', userData);
+      const response = await this.api.put('/v1/users/profile', userData);
       
       if (response.data.success) {
         // Update local storage
@@ -200,7 +237,7 @@ class AuthService {
   // Get user statistics
   async getUserStats(): Promise<{ success: boolean; stats?: any; message?: string }> {
     try {
-      const response = await this.api.get('/users/stats');
+      const response = await this.api.get('/v1/users/stats');
       return {
         success: true,
         stats: response.data.stats
@@ -217,12 +254,14 @@ class AuthService {
   // Logout user
   async logout(): Promise<void> {
     try {
-      await this.api.post('/auth/logout');
+      await this.api.post('/v1/auth/logout', {}, { withCredentials: true });
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('token');
+      // Clear all auth data from client storage
       localStorage.removeItem('user');
+      // Redirect to login page
+      window.location.href = '/login';
     }
   }
 
@@ -237,16 +276,16 @@ class AuthService {
     }
   }
 
-  // Get token from localStorage
+  // Get token from localStorage  
   getToken(): string | null {
-    return localStorage.getItem('token');
+    // Token is now handled by HTTP-only cookies, not localStorage
+    return null;
   }
 
   // Check if user is authenticated
   isAuthenticated(): boolean {
-    const token = this.getToken();
     const user = this.getCurrentUser();
-    return !!(token && user);
+    return !!user;
   }
 
   // Check if user is verified

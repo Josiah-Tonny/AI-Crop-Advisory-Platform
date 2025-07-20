@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 // Create transporter with better error handling
 const createTransporter = () => {
@@ -29,7 +29,7 @@ const createTransporter = () => {
 };
 
 // Send OTP email with improved error handling
-const sendOTPEmail = async (email, otpCode, firstName) => {
+export const sendOTPEmail = async (email, otpCode, firstName) => {
   const transporter = createTransporter();
 
   try {
@@ -68,7 +68,7 @@ const sendOTPEmail = async (email, otpCode, firstName) => {
             <p>This code will expire in 10 minutes.</p>
             <div class="footer">
               <p>If you didn't request this, please ignore this email.</p>
-              <p> ${new Date().getFullYear()} ${process.env.APP_NAME || 'AgriAI'}. All rights reserved.</p>
+              <p>&copy; ${new Date().getFullYear()} ${process.env.APP_NAME || 'AgriAI'}. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -91,7 +91,7 @@ const sendOTPEmail = async (email, otpCode, firstName) => {
 };
 
 // Send welcome email
-const sendWelcomeEmail = async (email, firstName) => {
+export const sendWelcomeEmail = async (email, firstName) => {
   try {
     const transporter = createTransporter();
 
@@ -101,81 +101,37 @@ const sendWelcomeEmail = async (email, firstName) => {
         address: process.env.SMTP_FROM || process.env.SMTP_USER
       },
       to: email,
-      subject: `Welcome to AgriAI, ${firstName}! `,
+      subject: `Welcome to ${process.env.APP_NAME || 'AgriAI'}!`,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to AgriAI</title>
+          <title>Welcome - ${process.env.APP_NAME || 'AgriAI'}</title>
           <style>
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
             .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
             .header { text-align: center; padding: 20px 0; background: linear-gradient(135deg, #10B981, #059669); color: white; border-radius: 10px 10px 0 0; margin: -20px -20px 20px -20px; }
-            .logo { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
-            .feature { background-color: #F0FDF4; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #10B981; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #10B981; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e5e5; color: #666; font-size: 14px; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #10B981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px 0; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <div class="logo"> AgriAI</div>
-              <p>Welcome to the Future of Farming!</p>
+              <h1>Welcome to ${process.env.APP_NAME || 'AgriAI'}!</h1>
             </div>
-            
-            <h2>Congratulations, ${firstName}! </h2>
-            
-            <p>Your email has been successfully verified and your AgriAI account is now active! You're now part of a growing community of smart farmers using AI to transform agriculture.</p>
-            
-            <h3> Get Started with These Features:</h3>
-            
-            <div class="feature">
-              <strong> Weather Intelligence</strong><br>
-              Get accurate weather forecasts with agricultural insights tailored to your location.
+            <p>Hello ${firstName || 'there'},</p>
+            <p>Thank you for joining ${process.env.APP_NAME || 'AgriAI'}. We're excited to have you on board!</p>
+            <p>Get started by exploring our platform and all the features we offer.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" class="button">Go to Dashboard</a>
             </div>
-            
-            <div class="feature">
-              <strong> Smart Crop Recommendations</strong><br>
-              Discover the best crops to plant based on your soil, climate, and market conditions.
-            </div>
-            
-            <div class="feature">
-              <strong> Soil Health Analysis</strong><br>
-              Understand your soil composition and get personalized improvement recommendations.
-            </div>
-            
-            <div class="feature">
-              <strong> Pest Management</strong><br>
-              Identify pests early and get integrated management solutions to protect your crops.
-            </div>
-            
-            <div class="feature">
-              <strong> Irrigation Optimization</strong><br>
-              Save water and improve yields with smart irrigation scheduling.
-            </div>
-            
-            <h3> Your Learning Journey</h3>
-            <p>Access our comprehensive library of:</p>
-            <ul>
-              <li> Educational courses and tutorials</li>
-              <li> Best practices guides</li>
-              <li> Video demonstrations</li>
-              <li> Market insights and trends</li>
-            </ul>
-            
-            <h3> Join Our Community</h3>
-            <p>Connect with fellow farmers, share experiences, and learn from agricultural experts in our community forum.</p>
-            
-            <p><strong>Need Help Getting Started?</strong><br>
-            Our support team is ready to help you make the most of AgriAI. Contact us at <a href="mailto:${process.env.SUPPORT_EMAIL || process.env.SMTP_USER}">support@agriai.com</a></p>
-            
+            <p>If you have any questions, feel free to reply to this email.</p>
             <div class="footer">
-              <p><strong>Happy Farming! </strong></p>
-              <p>The AgriAI Team</p>
-              <p>& ${new Date().getFullYear()} AgriAI. All rights reserved.</p>
+              <p>Best regards,<br>The ${process.env.APP_NAME || 'AgriAI'} Team</p>
+              <p>&copy; ${new Date().getFullYear()} ${process.env.APP_NAME || 'AgriAI'}. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -183,17 +139,16 @@ const sendWelcomeEmail = async (email, firstName) => {
       `
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    console.log(' Welcome email sent successfully:', result.messageId);
-    return result;
-
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Welcome email sent successfully:', info.messageId);
+    return info;
   } catch (error) {
-    console.error(' Failed to send welcome email:', error);
-    // Don't throw error for welcome email failure
+    console.error('Error sending welcome email:', error);
+    throw new Error(`Failed to send welcome email: ${error.message}`);
   }
 };
 
-module.exports = {
+export default {
   sendOTPEmail,
   sendWelcomeEmail
 };

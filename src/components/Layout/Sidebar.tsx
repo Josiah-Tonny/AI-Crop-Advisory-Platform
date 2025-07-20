@@ -19,7 +19,7 @@ const Sidebar: React.FC = () => {
   const location = useLocation();
 
   const navigation = [
-    { name: 'Home', href: '/', icon: Home },
+    { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'AI Advisory', href: '/ai-advisory', icon: Brain },
     { name: 'Weather', href: '/weather', icon: CloudRain },
     { name: 'Crops', href: '/crops', icon: Sprout },

@@ -1,12 +1,21 @@
 import React from 'react';
-import { Menu, Bell, Search, User } from 'lucide-react';
+import { Menu, Bell, Search, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   return (
     <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
       <Button
@@ -43,10 +52,18 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {/* Separator */}
           <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true" />
 
-          {/* Profile dropdown */}
-          <Button variant="ghost" size="icon">
-            <User className="h-6 w-6" />
-          </Button>
+          {/* User info and logout */}
+          <div className="flex items-center gap-x-2">
+            <span className="hidden sm:block text-sm text-gray-700">
+              {user?.firstName} {user?.lastName}
+            </span>
+            <Button variant="ghost" size="icon" title="Profile">
+              <User className="h-6 w-6" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+              <LogOut className="h-6 w-6" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

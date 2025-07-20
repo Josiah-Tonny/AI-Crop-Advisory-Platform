@@ -6,16 +6,14 @@ import toast from 'react-hot-toast';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  isVerified: boolean;
+
   loading: boolean;
   isTrialExpired: () => boolean;
   hasFeatureAccess: (feature: string) => boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: any) => Promise<boolean>;
   logout: () => void;
-  sendOTP: (email: string) => Promise<boolean>;
-  verifyOTP: (email: string, otp: string) => Promise<boolean>;
-  resendOTP: (email: string) => Promise<boolean>;
+
   updateUser: (user: User) => void;
   refreshProfile: () => Promise<void>;
 }
@@ -35,35 +33,49 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Initialize user from localStorage if available
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
+  // Check authentication status on mount
   useEffect(() => {
-    // Check if user is logged in on app start
-    const initializeAuth = async () => {
+    const checkAuth = async () => {
       try {
-        const currentUser = authService.getCurrentUser();
-        const token = authService.getToken();
+        // Check if we have a user in localStorage
+        const storedUser = localStorage.getItem('user');
         
-        if (currentUser && token) {
-          // Verify token is still valid by fetching fresh profile
+        if (storedUser) {
+          // Try to fetch fresh user data
           const profileResult = await authService.getProfile();
+          
           if (profileResult.success && profileResult.user) {
             setUser(profileResult.user);
           } else {
-            // Token invalid, clear local storage
-            authService.logout();
+            // If we can't get fresh data, use stored data
+            setUser(JSON.parse(storedUser));
+            
+            // Try to refresh the token in the background
+            authService.getProfile().then(result => {
+              if (result.success && result.user) {
+                setUser(result.user);
+              }
+            });
           }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
-        authService.logout();
+        console.error('Auth check error:', error);
       } finally {
         setLoading(false);
+        setAuthChecked(true);
       }
     };
 
-    initializeAuth();
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -104,71 +116,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     authService.logout();
     setUser(null);
-    toast.success('Logged out successfully');
-  };
-
-  const sendOTP = async (email: string): Promise<boolean> => {
-    try {
-      const response = await authService.sendOTP(email);
-      if (response.success) {
-        toast.success('OTP sent to your email!');
-        return true;
-      } else {
-        toast.error(response.message || 'Failed to send OTP');
-        return false;
-      }
-    } catch (error) {
-      console.error('Send OTP error:', error);
-      toast.error('Failed to send OTP. Please try again.');
-      return false;
-    }
-  };
-
-  const verifyOTP = async (email: string, otp: string): Promise<boolean> => {
-    try {
-      const response = await authService.verifyOTP({ email, otp });
-      if (response.success && response.user) {
-        setUser(response.user);
-        toast.success('Email verified successfully!');
-        return true;
-      } else {
-        toast.error(response.message || 'OTP verification failed');
-        return false;
-      }
-    } catch (error) {
-      console.error('Verify OTP error:', error);
-      toast.error('OTP verification failed. Please try again.');
-      return false;
-    }
-  };
-
-  const resendOTP = async (email: string): Promise<boolean> => {
-    try {
-      const response = await authService.resendOTP(email);
-      if (response.success) {
-        toast.success('OTP resent successfully!');
-        return true;
-      } else {
-        toast.error(response.message || 'Failed to resend OTP');
-        return false;
-      }
-    } catch (error) {
-      console.error('Resend OTP error:', error);
-      toast.error('Failed to resend OTP. Please try again.');
-      return false;
-    }
   };
 
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
+    // Update localStorage with the latest user data
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   const refreshProfile = async () => {
     try {
-      const profileResult = await authService.getProfile();
-      if (profileResult.success && profileResult.user) {
-        setUser(profileResult.user);
+      const result = await authService.getProfile();
+      if (result.success && result.user) {
+        setUser(result.user);
       }
     } catch (error) {
       console.error('Refresh profile error:', error);
@@ -185,17 +145,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
-    isAuthenticated: authService.isAuthenticated(),
-    isVerified: authService.isVerified(),
-    loading,
+    isAuthenticated: !!user,
+    loading: loading || !authChecked, // Show loading until we've checked auth state
     isTrialExpired,
     hasFeatureAccess,
     login,
     register,
     logout,
-    sendOTP,
-    verifyOTP,
-    resendOTP,
     updateUser,
     refreshProfile
   };

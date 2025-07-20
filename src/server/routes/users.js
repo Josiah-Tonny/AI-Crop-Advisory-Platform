@@ -1,15 +1,15 @@
-const express = require('express');
-const User = require('../models/User');
-const { authenticateToken } = require('../middleware/auth');
+import express from 'express';
+import User from '../models/User.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Update user profile
-router.put('/profile', authenticateToken, async (req, res) => {
+router.put('/profile', authenticate, async (req, res) => {
   try {
     const { firstName, lastName, phone, location, farmSize, cropTypes, preferences } = req.body;
     
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -48,26 +48,18 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Update profile error:', error);
-    
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', ')
-      });
-    }
-
     res.status(500).json({
       success: false,
-      message: 'Failed to update profile'
+      message: 'Failed to update profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
 // Get user statistics
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -76,13 +68,17 @@ router.get('/stats', authenticateToken, async (req, res) => {
     }
 
     // Calculate user statistics
+    const trialDuration = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
+    const accountAge = Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    const isTrialExpired = user.subscriptionTier === 'free' && accountAge > 14;
+    
     const stats = {
-      accountAge: Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)), // days
-      isTrialExpired: user.isTrialExpired(),
+      accountAge,
+      isTrialExpired,
       trialDaysRemaining: user.subscriptionTier === 'free' ? 
-        Math.max(0, 14 - Math.floor((Date.now() - user.trialStartDate.getTime()) / (1000 * 60 * 60 * 24))) : 
+        Math.max(0, 14 - accountAge) : 
         null,
-      cropTypesCount: user.cropTypes.length,
+      cropTypesCount: user.cropTypes?.length || 0,
       lastLoginDaysAgo: user.lastLogin ? 
         Math.floor((Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24)) : 
         null
@@ -102,4 +98,4 @@ router.get('/stats', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

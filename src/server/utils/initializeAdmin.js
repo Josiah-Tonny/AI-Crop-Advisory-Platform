@@ -1,5 +1,5 @@
-const User = require('../models/User');
-const logger = require('./logger');
+import User from '../models/User.js';
+import logger from './logger.js';
 
 const initializeAdmin = async () => {
   try {
@@ -40,4 +40,4 @@ const initializeAdmin = async () => {
   }
 };
 
-module.exports = initializeAdmin;
+export default initializeAdmin;
