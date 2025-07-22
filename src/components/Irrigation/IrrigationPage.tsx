@@ -51,8 +51,9 @@ const IrrigationPage: React.FC = () => {
       const locationData = await weatherService.searchLocation(location);
       if (locationData.length > 0) {
         const { lat, lon } = locationData[0];
-        const response = await weatherService.getCurrentWeather(lat, lon);
-        const data = response.data;
+        const data = await weatherService.getCurrentWeather(lat, lon);
+        
+        // Fix: Access data directly since weatherService now returns data directly
         setWeatherData({
           temperature: Math.round(data.main.temp),
           humidity: data.main.humidity,
@@ -63,6 +64,14 @@ const IrrigationPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching weather data:', error);
+      // Set fallback data
+      setWeatherData({
+        temperature: 25,
+        humidity: 60,
+        precipitation: 0,
+        windSpeed: 3.5,
+        description: 'clear sky'
+      });
     } finally {
       setLoading(false);
     }

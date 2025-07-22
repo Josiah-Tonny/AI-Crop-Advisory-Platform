@@ -45,3 +45,16 @@ Confirm if you've generated an App Password?
 Share the relevant code where you're sending the email (without sensitive info)?
 Check your server logs for any error messages when trying to send an email?
 This will help me provide more specific guidance to resolve your email delivery issues.
+
+
+
+
+apiConfig.ts AI Advisory 
+
+help me fix here is the correct path src\config\apiConfig.ts  apiConfig.ts  the information in it is correct and its what should be used check on that
+and my .env is correct mak sure you use that
+
+make sure the api key is providing that specifc page with ral time data and information no mock data
+
+
+aiService.ts:157Error getting crop recommendations: TypeError: Cannot read properties of undefined (reading 'temp') at Object.getCropRecommendations (aiService.ts:112:34) at handleSearch (AIAdvisoryPage.tsx:35:46) at handleSubmit (SearchInterface.tsx:34:7)

@@ -48,24 +48,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         // Check if we have a user in localStorage
         const storedUser = localStorage.getItem('user');
+        const storedToken = localStorage.getItem('token');
         
-        if (storedUser) {
-          // Try to fetch fresh user data
-          const profileResult = await authService.getProfile();
+        if (storedUser && storedToken) {
+          // Parse stored user
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
           
-          if (profileResult.success && profileResult.user) {
-            setUser(profileResult.user);
-          } else {
-            // If we can't get fresh data, use stored data
-            setUser(JSON.parse(storedUser));
-            
-            // Try to refresh the token in the background
-            authService.getProfile().then(result => {
-              if (result.success && result.user) {
-                setUser(result.user);
-              }
-            });
-          }
+          // Try to fetch fresh user data in the background
+          authService.getProfile().then(result => {
+            if (result.success && result.user) {
+              setUser(result.user);
+            }
+          }).catch(error => {
+            console.log('Background profile fetch failed, using cached data');
+          });
         }
       } catch (error) {
         console.error('Auth check error:', error);

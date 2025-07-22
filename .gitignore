@@ -26,3 +26,6 @@ dist-ssr
 
 # Netlify
 .netlify
+
+#not neede
+email.txt

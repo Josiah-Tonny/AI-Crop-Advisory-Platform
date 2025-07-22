@@ -118,11 +118,13 @@ const SearchInterface: React.FC<SearchInterfaceProps> = ({ onSearch, loading }) 
                   Crop Category & Type
                 </label>
                 <div className="space-y-3">
-                  {Object.entries(cropCategories).map(([key, category]) => (
+                  {Object.entries(cropCategories).map(([key, crops]) => (
                     <div key={key}>
-                      <Badge variant="outline" className="mb-2">{category.name}</Badge>
+                      <Badge variant="outline" className="mb-2">
+                        {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                      </Badge>
                       <div className="grid grid-cols-2 gap-2">
-                        {category.crops.slice(0, 4).map(crop => (
+                        {crops.slice(0, 4).map((crop: string) => (
                           <Button
                             key={crop}
                             type="button"
@@ -131,7 +133,7 @@ const SearchInterface: React.FC<SearchInterfaceProps> = ({ onSearch, loading }) 
                             onClick={() => setQuery(prev => ({ ...prev, cropType: crop }))}
                             className="text-xs h-8"
                           >
-                            {crop}
+                            {crop.charAt(0).toUpperCase() + crop.slice(1).replace(/([A-Z])/g, ' $1')}
                           </Button>
                         ))}
                       </div>

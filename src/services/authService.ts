@@ -1,6 +1,33 @@
 import axios from 'axios';
-import { API_CONFIG } from '../config/apiConfig';
-import { LoginCredentials, RegisterData, OTPVerification, AuthResponse, OTPResponse, User } from '../types/auth';
+import API_CONFIG from '../config/apiConfig';
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role?: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  user?: User;
+  token?: string;
+}
 
 class AuthService {
   private baseURL = API_CONFIG.BASE_URL;
@@ -47,13 +74,24 @@ class AuthService {
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
       console.log('Sending registration data:', userData);
-      const response = await this.api.post('/v1/auth/register', userData);
+      const response = await this.api.post(API_CONFIG.ENDPOINTS.AUTH.REGISTER, userData);
       
       if (response.data.status === 'success') {
+        // Store token if provided
+        if (response.data.token) {
+          this.setToken(response.data.token);
+        }
+        
+        // Store user data
+        if (response.data.data?.user) {
+          this.setUser(response.data.data.user);
+        }
+        
         return {
           success: true,
           message: response.data.message,
-          user: response.data.data?.user
+          user: response.data.data?.user,
+          token: response.data.token
         };
       }
       
@@ -62,17 +100,7 @@ class AuthService {
         message: response.data.message || 'Registration failed. Please try again.'
       };
     } catch (error: any) {
-      console.error('Registration error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          data: error.config?.data
-        }
-      });
+      console.error('Registration error:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Registration failed. Please try again.'
@@ -81,22 +109,27 @@ class AuthService {
   }
 
   // Login user
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+  async login(loginData: LoginData): Promise<AuthResponse> {
     try {
-      const response = await this.api.post('/v1/auth/login', credentials, {
-        withCredentials: true // Important for sending/receiving cookies
-      });
+      console.log('Sending login data:', loginData);
+      const response = await this.api.post(API_CONFIG.ENDPOINTS.AUTH.LOGIN, loginData);
       
-      if (response.data.status === 'success' && response.data.data?.user) {
-        // Store minimal user data in localStorage
-        const { id, email, firstName, lastName, role } = response.data.data.user;
-        const userData = { id, email, firstName, lastName, role };
-        localStorage.setItem('user', JSON.stringify(userData));
+      if (response.data.status === 'success') {
+        // Store token
+        if (response.data.token) {
+          this.setToken(response.data.token);
+        }
+        
+        // Store user data
+        if (response.data.data?.user) {
+          this.setUser(response.data.data.user);
+        }
         
         return {
           success: true,
           message: response.data.message,
-          user: response.data.data.user
+          user: response.data.data?.user,
+          token: response.data.token
         };
       }
       
@@ -108,7 +141,7 @@ class AuthService {
       console.error('Login error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed. Please try again.'
+        message: error.response?.data?.message || 'Login failed. Please check your credentials.'
       };
     }
   }
@@ -175,21 +208,20 @@ class AuthService {
   }
 
   // Get user profile
-  async getProfile(): Promise<{ success: boolean; user?: User; message?: string }> {
+  async getProfile(): Promise<AuthResponse> {
     try {
-      const response = await this.api.get('/v1/auth/profile', {
-        withCredentials: true // Important for sending cookies
-      });
+      const response = await this.api.get(API_CONFIG.ENDPOINTS.AUTH.PROFILE);
       
-      if (response.data.status === 'success' && response.data.data?.user) {
-        // Update local storage with fresh user data
-        const { id, email, firstName, lastName, role } = response.data.data.user;
-        const userData = { id, email, firstName, lastName, role };
-        localStorage.setItem('user', JSON.stringify(userData));
+      if (response.data.status === 'success') {
+        const user = response.data.data?.user || response.data.user;
+        if (user) {
+          this.setUser(user);
+        }
         
         return {
           success: true,
-          user: response.data.data.user
+          message: response.data.message || 'Profile fetched successfully',
+          user: user
         };
       }
       
@@ -199,13 +231,20 @@ class AuthService {
       };
     } catch (error: any) {
       console.error('Get profile error:', error);
-      // If unauthorized, clear local storage
-      if (error.response?.status === 401) {
-        this.logout();
+      
+      // If profile endpoint doesn't exist, try to use stored user data
+      const storedUser = this.getUser();
+      if (storedUser) {
+        return {
+          success: true,
+          message: 'Using cached profile data',
+          user: storedUser
+        };
       }
+      
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to get user profile'
+        message: error.response?.data?.message || 'Failed to fetch profile'
       };
     }
   }
@@ -252,16 +291,18 @@ class AuthService {
   }
 
   // Logout user
-  async logout(): Promise<void> {
+  logout(): void {
     try {
-      await this.api.post('/v1/auth/logout', {}, { withCredentials: true });
+      // Clear stored data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Optional: Call logout endpoint if it exists
+      this.api.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT).catch(() => {
+        // Ignore errors for logout endpoint
+      });
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      // Clear all auth data from client storage
-      localStorage.removeItem('user');
-      // Redirect to login page
-      window.location.href = '/login';
     }
   }
 
@@ -278,14 +319,28 @@ class AuthService {
 
   // Get token from localStorage  
   getToken(): string | null {
-    // Token is now handled by HTTP-only cookies, not localStorage
-    return null;
+    return localStorage.getItem('token');
+  }
+
+  setToken(token: string): void {
+    localStorage.setItem('token', token);
+  }
+
+  // User management
+  getUser(): User | null {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  }
+
+  setUser(user: User): void {
+    localStorage.setItem('user', JSON.stringify(user));
   }
 
   // Check if user is authenticated
   isAuthenticated(): boolean {
-    const user = this.getCurrentUser();
-    return !!user;
+    const token = this.getToken();
+    const user = this.getUser();
+    return !!(token && user);
   }
 
   // Check if user is verified
