@@ -1,45 +1,13 @@
 import axios from 'axios';
-import API_CONFIG from '../config/apiConfig';
+import { API_CONFIG } from '../config/apiConfig';
+import { 
+  CropRecommendation, 
+  DiseasePrediction, 
+  CropRecommendationRequest 
+} from '../types/agriculture';
 
-// Types
-type DiseasePrediction = {
-  disease: string;
-  confidence: number;
-  treatment: string;
-  prevention: string[];
-};
-
-type CropRecommendation = {
-  crop: string;
-  variety: string;
-  plantingDate: string;
-  expectedYield: string;
-  confidence: number;
-  reasons: string[];
-};
-
-// AI Service Configuration
-const AI_CONFIG = {
-  plantVillage: {
-    baseUrl: 'https://plantvillage.herokuapp.com/api/v1',
-  },
-  openai: {
-    baseUrl: 'https://api.openai.com/v1',
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  },
-  weather: {
-    apiKey: import.meta.env.VITE_OPENWEATHER_API_KEY,
-    baseUrl: 'https://api.openweathermap.org/data/2.5',
-  },
-  googleCloud: {
-    projectId: import.meta.env.VITE_GOOGLE_CLOUD_PROJECT_ID,
-    location: 'us-central1',
-    modelId: 'text-bison@001',
-  },
-};
-
-// Cache for API responses
-const cache = new Map<string, any>();
+const cropCache = new Map<string, CropRecommendation[]>();
+const diseaseCache = new Map<string, DiseasePrediction>();
 
 /**
  * Detect plant diseases from an image
@@ -49,42 +17,26 @@ export const detectPlantDisease = async (imageFile: File): Promise<DiseasePredic
     const cacheKey = `disease_${imageFile.name}_${imageFile.size}`;
     
     // Check cache first
-    if (cache.has(cacheKey)) {
-      return cache.get(cacheKey);
+    const cachedResult = diseaseCache.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
     }
 
     const formData = new FormData();
-    formData.append('file', imageFile);
+    formData.append('image', imageFile);
 
-    const response = await axios.post(
-      `${AI_CONFIG.plantVillage.baseUrl}/predict`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+    const response = await axios.post(`${API_CONFIG.BASE_URL}/analyze-plant-disease`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
-    // Transform response to our format
-    const result: DiseasePrediction = {
-      disease: response.data.disease_name,
-      confidence: parseFloat(response.data.confidence),
-      treatment: response.data.treatment || 'No specific treatment available',
-      prevention: response.data.prevention || [
-        'Maintain proper plant spacing',
-        'Ensure good air circulation',
-        'Water at the base of plants',
-        'Remove and destroy infected plants',
-      ],
-    };
-
-    // Cache the result
-    cache.set(cacheKey, result);
+    const result = response.data as DiseasePrediction;
+    diseaseCache.set(cacheKey, result);
     return result;
   } catch (error) {
     console.error('Error detecting plant disease:', error);
-    throw new Error('Failed to detect plant disease. Please try again.');
+    throw new Error('Failed to analyze plant disease');
   }
 };
 
@@ -123,78 +75,35 @@ export const getCropRecommendations = async ({
   location,
   soilType,
   previousCrops = [],
-}: {
-  location: string;
-  soilType: string;
-  previousCrops?: string[];
-}): Promise<CropRecommendation[]> => {
+}: CropRecommendationRequest): Promise<CropRecommendation[]> => {
   try {
     const cacheKey = `recommendations_${location}_${soilType}_${previousCrops.join('_')}`;
-    
-    // Check cache first
-    if (cache.has(cacheKey)) {
-      return cache.get(cacheKey);
+    const cachedResult = cropCache.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
     }
 
-    try {
-      // Get real-time weather data
-      const weatherData = await getWeatherData(location);
-      
-      // Prepare request data with real weather data
-      const requestData = {
-        location,
-        soilType,
-        temperature: weatherData.main?.temp,
-        humidity: weatherData.main?.humidity,
-        rainfall: weatherData.rain?.['1h'] || 0,
-        weatherCondition: weatherData.weather?.[0]?.main || 'Clear',
-        previousCrops,
-      };
-
-      // Use the backend API endpoint from apiConfig
-      const response = await axios.post(
-        API_CONFIG.buildUrl(API_CONFIG.ENDPOINTS.AI.RECOMMENDATIONS),
-        requestData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-          },
-          timeout: API_CONFIG.REQUEST_CONFIG.TIMEOUT
-        }
-      );
-
-      // Cache the successful response
-      if (response.data && Array.isArray(response.data)) {
-        cache.set(cacheKey, response.data);
-        return response.data;
-      }
-      
-      throw new Error('Invalid response format from server');
-      
-    } catch (apiError: any) {
-      console.error('API Error getting crop recommendations:', apiError);
-      
-      // If we have a 401 Unauthorized, clear the token and reload
-      if (apiError.response?.status === 401) {
-        localStorage.removeItem('token');
-        window.location.reload();
-        return [];
-      }
-      
-      // For other errors, try to use OpenWeather data directly
-      try {
-        const weatherData = await getWeatherData(location);
-        return generateRecommendationsFromWeather(weatherData, soilType);
-      } catch (weatherError) {
-        console.error('Error generating recommendations from weather data:', weatherError);
-        throw new Error('Unable to generate recommendations. Please try again later.');
-      }
+    const weatherData = await getWeatherData(location);
+    if (!weatherData?.main?.temp || !weatherData?.weather?.[0]?.main) {
+      throw new Error('Weather data is incomplete or invalid');
     }
-    
+
+    const response = await axios.post(`${API_CONFIG.BASE_URL}/crop-recommendations`, {
+      location,
+      soilType,
+      temperature: weatherData.main.temp,
+      humidity: weatherData.main.humidity ?? 50,
+      rainfall: weatherData.rain?.['1h'] ?? 0,
+      weatherCondition: weatherData.weather[0].main,
+      previousCrops,
+    });
+
+    const recommendations = response.data as CropRecommendation[];
+    cropCache.set(cacheKey, recommendations);
+    return recommendations;
   } catch (error) {
-    console.error('Error in getCropRecommendations:', error);
-    throw error; // Re-throw to be handled by the caller
+    console.error('Error getting crop recommendations:', error);
+    throw new Error('Failed to get crop recommendations');
   }
 };
 

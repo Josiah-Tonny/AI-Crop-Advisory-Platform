@@ -46,7 +46,7 @@ export interface SearchQuery {
   season?: string;
   farmSize?: number;
   cropType?: string;
-  additionalParams?: {
+  additionalParams?: Record<string, unknown>;
     pH?: number;
     nitrogen?: number;
     phosphorus?: number;

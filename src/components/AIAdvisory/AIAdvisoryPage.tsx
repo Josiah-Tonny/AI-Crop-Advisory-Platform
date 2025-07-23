@@ -2,95 +2,50 @@ import React, { useState } from 'react';
 import { Brain, Lightbulb, TrendingUp, Users, Sprout, CloudRain, TestTube, Bug, Droplets } from 'lucide-react';
 import SearchInterface from './SearchInterface';
 import ResultsDisplay from './ResultsDisplay';
-import { SearchQuery } from '../../types';
-import aiAdvisoryService from '../../services/aiService';
+import { SearchQuery, SearchResponse } from '../../types/search';
+import { getCurrentWeather, getForecast } from '../../services/weatherService';
+import { getCropRecommendations } from '../../services/aiService';
 import toast from 'react-hot-toast';
 
 const AIAdvisoryPage: React.FC = () => {
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [currentQuery, setCurrentQuery] = useState<SearchQuery | null>(null);
 
   const handleSearch = async (query: SearchQuery) => {
     setLoading(true);
+    setError(null);
     setCurrentQuery(query);
     setResults(null);
 
     try {
-      let response;
-
       switch (query.queryType) {
         case 'weather':
-          const [currentWeather, forecast] = await Promise.all([
-            aiAdvisoryService.getCurrentWeather(query.location),
-            aiAdvisoryService.getForecast(query.location)
+          const [current, forecast] = await Promise.all([
+            getCurrentWeather(query.location),
+            getForecast(query.location)
           ]);
-          response = {
-            current: currentWeather.data,
-            forecast: forecast.data
-          };
+          setResults({ weather: { current, forecast } });
           break;
 
         case 'crop-recommendation':
-          response = await aiAdvisoryService.getCropRecommendations({
+          const recommendations = await getCropRecommendations({
             location: query.location,
             soilType: query.soilType || 'loam',
-            season: query.season || 'Long Rains (March-May)',
-            farmSize: query.farmSize || 1,
-            currentCrops: []
+            previousCrops: []
           });
-          response = response.data;
-          break;
-
-        case 'soil-analysis':
-          response = await aiAdvisoryService.getSoilAnalysis({
-            location: query.location,
-            pH: query.additionalParams?.pH,
-            nitrogen: query.additionalParams?.nitrogen,
-            phosphorus: query.additionalParams?.phosphorus,
-            potassium: query.additionalParams?.potassium
-          });
-          response = response.data;
-          break;
-
-        case 'pest-control':
-          response = await aiAdvisoryService.getPestControl({
-            location: query.location,
-            cropType: query.cropType || 'maize',
-            symptoms: query.additionalParams?.symptoms?.split(',').map((s: string) => s.trim()) || []
-          });
-          response = response.data;
-          break;
-
-        case 'irrigation':
-          response = await aiAdvisoryService.getIrrigationAdvice({
-            location: query.location,
-            cropType: query.cropType || 'maize',
-            soilType: query.soilType || 'loam',
-            farmSize: query.farmSize || 1
-          });
-          response = response.data;
+          setResults({ recommendations });
           break;
 
         default:
-          throw new Error('Unknown query type');
+          setError('Unsupported query type');
       }
 
-      setResults(response);
       toast.success('AI advisory generated successfully!');
-    } catch (error: any) {
-      console.error('Error fetching AI advisory:', error);
-      
-      // More specific error messages
-      if (error.response?.status === 401) {
-        toast.error('Weather API authentication failed. Please check the API key.');
-      } else if (error.response?.status === 404) {
-        toast.error('Location not found. Please check the spelling and try again.');
-      } else if (error.code === 'NETWORK_ERROR') {
-        toast.error('Network error. Please check your internet connection.');
-      } else {
-        toast.error('Failed to get AI advisory. Please try again with a different location.');
-      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      toast.error(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
