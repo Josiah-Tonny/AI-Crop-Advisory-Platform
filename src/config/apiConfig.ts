@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  // Base URLs
+  // Base URLs - Use port 5000 to match backend server
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   
   // Weather API
@@ -37,8 +37,7 @@ export const API_CONFIG = {
     AUTH: {
       LOGIN: '/v1/auth/login',
       REGISTER: '/v1/auth/register',
-      LOGOUT: '/auth/logout',
-      REFRESH: '/auth/refresh',
+      LOGOUT: '/v1/auth/logout',
       PROFILE: '/v1/auth/profile',
     },
     

@@ -55,13 +55,18 @@ router.post('/register', validateRegistration, async (req, res) => {
     res.status(201).json({
       status: 'success',
       message: 'User registered successfully',
+      token: token, // Include token in response body for frontend
       data: {
         user: {
           id: user._id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          name: `${user.firstName} ${user.lastName}`,
           role: user.role,
+          isVerified: user.isVerified,
+          subscriptionTier: user.subscriptionTier,
+          createdAt: user.createdAt
         },
       },
     });
@@ -116,13 +121,18 @@ router.post('/login', validateLogin, async (req, res) => {
     res.status(200).json({
       status: 'success',
       message: 'Login successful',
+      token: token, // Include token in response body for frontend
       data: {
         user: {
           id: user._id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          name: `${user.firstName} ${user.lastName}`,
           role: user.role,
+          isVerified: user.isVerified,
+          subscriptionTier: user.subscriptionTier,
+          createdAt: user.createdAt
         },
       },
     });
@@ -135,8 +145,6 @@ router.post('/login', validateLogin, async (req, res) => {
     });
   }
 });
-
-
 
 // Get user profile
 router.get('/profile', authenticate, async (req, res) => {
@@ -166,12 +174,28 @@ router.get('/profile', authenticate, async (req, res) => {
 });
 
 // Logout user
-router.post('/logout', (req, res) => {
-  res.clearCookie('token');
-  res.status(200).json({
-    status: 'success',
-    message: 'Logged out successfully',
-  });
+router.post('/logout', authenticate, async (req, res) => {
+  try {
+    // Clear the token cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    // Send success response
+    res.status(200).json({
+      status: 'success',
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred during logout',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
 });
 
 export default router;

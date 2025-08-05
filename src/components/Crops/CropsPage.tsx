@@ -31,6 +31,18 @@ interface CropRecommendation {
   challenges: string[];
 }
 
+// Add proper types and fix missing declarations
+interface WeatherData {
+  temperature: number;
+  humidity: number;
+  forecast: Array<{ precipitation: number }>;
+  main: {
+    temp: number;
+    humidity: number;
+  };
+  name: string;
+}
+
 const CropsPage: React.FC = () => {
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -46,11 +58,11 @@ const CropsPage: React.FC = () => {
   const loadCropRecommendations = async () => {
     setLoading(true);
     try {
-      // Get current weather data
+      // Get current weather data using the improved weather service
       const weather = await weatherService.getCurrentWeather(location.lat, location.lon);
       setWeatherData(weather);
 
-      // Generate crop recommendations based on weather and location
+      // Generate crop recommendations based on real weather data
       const cropRecommendations = await generateCropRecommendations(weather, location);
       setRecommendations(cropRecommendations);
     } catch (error) {
@@ -60,13 +72,12 @@ const CropsPage: React.FC = () => {
     }
   };
 
-  const generateCropRecommendations = async (weather: any, location: any): Promise<CropRecommendation[]> => {
+  const generateCropRecommendations = async (weather: WeatherData, location: any): Promise<CropRecommendation[]> => {
     const recommendations: CropRecommendation[] = [];
     
     // Get current season (simplified for demo)
     const month = new Date().getMonth();
     const isRainySeason = month >= 2 && month <= 5; // March to June
-    const isDrySeason = month >= 6 && month <= 9; // July to October
 
     Object.entries(cropDatabase).forEach(([key, crop]) => {
       const suitability = calculateCropSuitability(crop, weather, isRainySeason);
@@ -88,11 +99,11 @@ const CropsPage: React.FC = () => {
     return recommendations.sort((a, b) => b.suitability - a.suitability);
   };
 
-  const calculateCropSuitability = (crop: any, weather: any, isRainySeason: boolean): number => {
+  const calculateCropSuitability = (crop: any, weather: WeatherData, isRainySeason: boolean): number => {
     let score = 50; // Base score
 
-    // Temperature suitability
-    const temp = weather.main.temp;
+    // Temperature suitability based on real weather data
+    const temp = weather.temperature;
     const [minTemp, maxTemp] = crop.optimalTemp.split('-').map((t: string) => parseInt(t));
     if (temp >= minTemp && temp <= maxTemp) {
       score += 25;
@@ -102,17 +113,26 @@ const CropsPage: React.FC = () => {
       score -= 10;
     }
 
-    // Humidity and rainfall
-    const humidity = weather.main.humidity;
+    // Humidity and rainfall from real weather data
+    const humidity = weather.humidity;
+    // Safe handling of forecast data
+    const avgRainfall = weather.forecast && weather.forecast.length > 0 
+      ? weather.forecast.reduce((sum, day) => sum + (day.precipitation || 0), 0) / weather.forecast.length 
+      : 0;
+    
     if (crop.name.includes('Rice') && humidity > 70) score += 20;
     if (crop.name.includes('Cassava') && humidity < 60) score += 15;
     if (crop.name.includes('Tomato') && humidity > 80) score -= 15;
 
+    // Rainfall patterns from forecast
+    if (avgRainfall > 5 && ['maize', 'rice', 'beans'].includes(key)) score += 10;
+    if (avgRainfall < 2 && ['cassava', 'sorghum'].includes(key)) score += 10;
+
     // Seasonal factors
     if (isRainySeason) {
-      if (['maize', 'beans', 'rice'].includes(crop.name.toLowerCase())) score += 15;
+      if (['maize', 'beans', 'rice'].includes(key)) score += 15;
     } else {
-      if (['cassava', 'coffee'].includes(crop.name.toLowerCase())) score += 10;
+      if (['cassava', 'coffee'].includes(key)) score += 10;
     }
 
     // Market demand factor
@@ -122,7 +142,7 @@ const CropsPage: React.FC = () => {
     return Math.min(100, Math.max(0, score));
   };
 
-  const getSuitabilityReasons = (crop: any, weather: any, suitability: number): string[] => {
+  const getSuitabilityReasons = (crop: any, weather: WeatherData, suitability: number): string[] => {
     const reasons = [];
     
     if (suitability > 80) {
@@ -139,21 +159,21 @@ const CropsPage: React.FC = () => {
       reasons.push('High profit potential');
     }
 
-    if (weather.main.temp >= 20 && weather.main.temp <= 30) {
+    if (weather.temperature >= 20 && weather.temperature <= 30) {
       reasons.push('Optimal temperature range');
     }
 
     return reasons;
   };
 
-  const getCropChallenges = (crop: any, weather: any): string[] => {
+  const getCropChallenges = (crop: any, weather: WeatherData): string[] => {
     const challenges = [];
     
-    if (weather.main.temp > 35) {
+    if (weather.temperature > 35) {
       challenges.push('High temperature stress risk');
     }
     
-    if (weather.main.humidity > 80) {
+    if (weather.humidity > 80) {
       challenges.push('High disease pressure from humidity');
     }
     
@@ -218,11 +238,11 @@ const CropsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <Thermometer className="w-6 h-6 text-red-500" />
-                  <span className="text-lg font-semibold">{Math.round(weatherData.main.temp)}°C</span>
+                  <span className="text-lg font-semibold">{Math.round(weatherData.temperature)}°C</span>
                   <Droplets className="w-6 h-6 text-blue-500" />
-                  <span className="text-lg font-semibold">{weatherData.main.humidity}%</span>
+                  <span className="text-lg font-semibold">{weatherData.humidity}%</span>
                   <MapPin className="w-5 h-5 text-gray-500" />
-                  <span className="text-gray-700">{weatherData.name}</span>
+                  <span className="text-gray-700">{weatherData.name || weatherData.location}</span>
                 </div>
                 <Button onClick={loadCropRecommendations} variant="outline" size="sm">
                   <RefreshCw className="w-4 h-4 mr-2" />
@@ -255,6 +275,7 @@ const CropsPage: React.FC = () => {
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  aria-label="Filter crops by category"
                 >
                   <option value="all">All Categories</option>
                   <option value="cereals">Cereals</option>

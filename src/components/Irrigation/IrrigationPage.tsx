@@ -47,21 +47,16 @@ const IrrigationPage: React.FC = () => {
   const fetchWeatherData = async () => {
     try {
       setLoading(true);
-      // First get coordinates from location string
-      const locationData = await weatherService.searchLocation(location);
-      if (locationData.length > 0) {
-        const { lat, lon } = locationData[0];
-        const data = await weatherService.getCurrentWeather(lat, lon);
-        
-        // Fix: Access data directly since weatherService now returns data directly
-        setWeatherData({
-          temperature: Math.round(data.main.temp),
-          humidity: data.main.humidity,
-          precipitation: data.rain?.['1h'] || 0,
-          windSpeed: data.wind.speed,
-          description: data.weather[0].description
-        });
-      }
+      // Use the improved weather service for real-time data
+      const weather = await weatherService.getCurrentWeather(-1.2921, 36.8219); // Default to Nairobi
+      
+      setWeatherData({
+        temperature: weather.temperature,
+        humidity: weather.humidity,
+        precipitation: weather.forecast && weather.forecast.length > 0 ? weather.forecast[0].precipitation : 0,
+        windSpeed: weather.windSpeed,
+        description: weather.condition
+      });
     } catch (error) {
       console.error('Error fetching weather data:', error);
       // Set fallback data

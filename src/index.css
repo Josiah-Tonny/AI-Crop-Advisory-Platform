@@ -35,3 +35,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}

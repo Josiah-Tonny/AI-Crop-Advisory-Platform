@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 const WEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 const AGRO_API_KEY = import.meta.env.VITE_AGROMONITORING_API_KEY;
 const LOCATION_API_KEY = import.meta.env.VITE_LOCATIONIQ_API_KEY;
@@ -23,36 +23,43 @@ export const weatherService = {
     try {
       const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
       if (!apiKey) {
-        throw new Error('Weather API key not found');
+        throw new Error('Weather API key not found. Please check your environment configuration.');
       }
 
+      console.log(`Fetching weather for coordinates: ${lat}, ${lon}`);
       const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Weather API error: ${response.status}`);
+        if (response.status === 401) {
+          throw new Error('Invalid API key. Please check your OpenWeatherMap API key.');
+        } else if (response.status === 404) {
+          throw new Error('Location not found. Please check the coordinates.');
+        } else {
+          throw new Error(`Weather API error: ${response.status} - ${response.statusText}`);
+        }
       }
       
       const data = await response.json();
-      return data; // Return the data directly, not wrapped in { data }
+      
+      // Validate essential data fields
+      if (!data.main || !data.weather || !Array.isArray(data.weather) || data.weather.length === 0) {
+        throw new Error('Invalid weather data received from API');
+      }
+
+      console.log('Weather data received:', {
+        location: data.name,
+        temp: data.main.temp,
+        condition: data.weather[0].description
+      });
+
+      return data;
     } catch (error) {
       console.error('Weather API Error:', error);
-      // Return mock data as fallback
-      return {
-        main: {
-          temp: 25,
-          humidity: 60,
-          pressure: 1013
-        },
-        weather: [{
-          description: 'clear sky',
-          main: 'Clear'
-        }],
-        wind: {
-          speed: 3.5
-        },
-        rain: null
-      };
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to fetch weather data. Please try again.');
     }
   },
 
@@ -63,7 +70,8 @@ export const weatherService = {
         throw new Error('Weather API key not found');
       }
 
-      const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationName)}&limit=1&appid=${apiKey}`;
+      console.log(`Searching for location: ${locationName}`);
+      const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationName)}&limit=5&appid=${apiKey}`;
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -71,11 +79,28 @@ export const weatherService = {
       }
       
       const data = await response.json();
-      return data.length > 0 ? data : [{ lat: -1.286389, lon: 36.817223, name: 'Nairobi' }]; // Default to Nairobi
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error(`No locations found for "${locationName}". Please try a different search term.`);
+      }
+
+      // Return locations with proper formatting
+      const locations = data.map(location => ({
+        lat: location.lat,
+        lon: location.lon,
+        name: location.name,
+        country: location.country,
+        state: location.state
+      }));
+
+      console.log(`Found ${locations.length} locations for "${locationName}"`);
+      return locations;
     } catch (error) {
       console.error('Geocoding API Error:', error);
-      // Return default location (Nairobi) as fallback
-      return [{ lat: -1.286389, lon: 36.817223, name: 'Nairobi' }];
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to search location. Please try again.');
     }
   },
 
@@ -93,7 +118,13 @@ export const weatherService = {
         throw new Error(`Forecast API error: ${response.status}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      
+      if (!data.list || !Array.isArray(data.list)) {
+        throw new Error('Invalid forecast data received');
+      }
+
+      return data;
     } catch (error) {
       console.error('Forecast API Error:', error);
       throw error;

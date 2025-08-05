@@ -40,17 +40,43 @@ const WeatherPage: React.FC = () => {
   const loadWeatherData = async () => {
     setLoading(true);
     try {
-      const [current, forecast, airQuality] = await Promise.all([
-        weatherService.getCurrentWeather(currentLocation.lat, currentLocation.lon),
-        weatherService.getForecast(currentLocation.lat, currentLocation.lon),
-        weatherService.getAirQuality(currentLocation.lat, currentLocation.lon)
-      ]);
-
+      // Use the improved weather service for real-time data
+      const weatherData = await weatherService.getCurrentWeather(currentLocation.lat, currentLocation.lon);
+      
       setWeatherData({
-        current,
-        forecast,
-        airQuality,
-        location: current.name + ', ' + current.sys.country
+        current: {
+          temp: weatherData.temperature,
+          feels_like: weatherData.main?.feels_like || weatherData.temperature + 2,
+          humidity: weatherData.humidity,
+          pressure: weatherData.pressure,
+          wind: { speed: weatherData.windSpeed, deg: weatherData.wind?.deg || 0 },
+          weather: weatherData.weather || [{ main: weatherData.condition.split(' ')[0], description: weatherData.condition, icon: weatherData.icon }],
+          visibility: weatherData.visibility * 1000,
+          name: weatherData.name || weatherData.location.split(',')[0]
+        },
+        forecast: {
+          list: weatherData.forecast.map(day => ({
+            dt: new Date(day.date).getTime() / 1000,
+            dt_txt: `${day.date} 12:00:00`,
+            main: {
+              temp: (day.high + day.low) / 2,
+              temp_max: day.high,
+              temp_min: day.low,
+              humidity: day.humidity
+            },
+            weather: [{ main: day.condition.split(' ')[0], description: day.condition, icon: day.icon }],
+            wind: { speed: day.windSpeed },
+            pop: day.precipitationChance / 100,
+            rain: day.precipitation > 0 ? { '3h': day.precipitation } : undefined
+          }))
+        },
+        airQuality: {
+          list: [{
+            main: { aqi: weatherData.airQuality.aqi },
+            components: weatherData.airQuality.pollutants
+          }]
+        },
+        location: weatherData.location
       });
     } catch (error) {
       console.error('Failed to load weather data:', error);

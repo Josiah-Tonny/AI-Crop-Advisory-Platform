@@ -6,8 +6,7 @@ import {
   Sprout,
   AlertTriangle,
   Calendar,
-  BarChart3,
-  Users
+  BarChart3
 } from 'lucide-react';
 import StatsCard from './StatsCard';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,7 +14,7 @@ import { weatherService } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
-  const { user, isTrialExpired, hasFeatureAccess } = useAuth();
+  const { user, isTrialExpired } = useAuth();
   const [weatherData, setWeatherData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showTrialWarning, setShowTrialWarning] = useState(false);
@@ -36,7 +35,18 @@ const Dashboard: React.FC = () => {
           if (locationData.length > 0) {
             const { lat, lon } = locationData[0];
             const response = await weatherService.getCurrentWeather(lat, lon);
-            setWeatherData(response.data);
+            
+            // Transform the response to match expected format
+            setWeatherData({
+              current: {
+                temp_c: response.temperature,
+                feelslike_c: response.temperature + 2, // Approximate
+                humidity: response.humidity,
+                wind_kph: response.windSpeed * 3.6, // Convert m/s to km/h
+                condition: { text: response.condition },
+                uv: response.uvIndex
+              }
+            });
           }
         } catch (error) {
           console.error('Error fetching weather data:', error);
@@ -123,7 +133,7 @@ const Dashboard: React.FC = () => {
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-green-600 to-green-800 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">
-          Welcome back, {user?.name}!
+          Welcome back, {user?.firstName || user?.name}!
         </h1>
         <p className="text-green-100">
           {user?.subscriptionTier === 'free' && !isTrialExpired() 

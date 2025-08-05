@@ -3,6 +3,9 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  name: string;
+  avatar?: string;
+  subscriptionTier?: 'free' | 'premium' | 'enterprise';
   phone?: string;
   location?: string;
   farmSize?: string;
@@ -10,6 +13,7 @@ export interface User {
   isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
+  role?: string;
 }
 
 export interface LoginCredentials {
@@ -28,20 +32,9 @@ export interface RegisterData {
   cropTypes?: string[];
 }
 
-export interface OTPVerification {
-  email: string;
-  otp: string;
-}
-
 export interface AuthResponse {
   success: boolean;
   message: string;
   user?: User;
   token?: string;
-}
-
-export interface OTPResponse {
-  success: boolean;
-  message: string;
-  otpSent?: boolean;
 }

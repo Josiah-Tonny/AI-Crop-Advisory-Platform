@@ -23,6 +23,23 @@ export interface WeatherData {
     };
   };
   forecast: WeatherForecast[];
+  // Add compatibility fields for different components
+  main?: {
+    temp: number;
+    humidity: number;
+    pressure: number;
+    feels_like: number;
+  };
+  wind?: {
+    speed: number;
+    deg: number;
+  };
+  weather?: Array<{
+    main: string;
+    description: string;
+    icon: string;
+  }>;
+  name?: string;
 }
 
 export interface WeatherForecast {
@@ -46,7 +63,7 @@ export interface SearchQuery {
   season?: string;
   farmSize?: number;
   cropType?: string;
-  additionalParams?: Record<string, unknown>;
+  additionalParams?: {
     pH?: number;
     nitrogen?: number;
     phosphorus?: number;
@@ -58,20 +75,31 @@ export interface SearchQuery {
 
 // Crop Types
 export interface CropRecommendation {
-  id: string;
+  id?: string;
   name: string;
-  category: string;
+  crop?: string; // Add for backward compatibility
+  variety?: string;
+  category?: string;
   suitability: number;
-  plantingTime: string;
-  harvestTime: string;
+  confidence?: number; // Add missing confidence property
+  plantingDate?: string;
+  plantingTime?: string;
+  harvestTime?: string;
   expectedYield: string;
-  profitability: string;
-  waterRequirement: string;
-  soilType: string;
-  climateRequirement: string;
-  tips: string[];
-  image: string;
-  marketPrice: {
+  profitability?: string;
+  waterRequirement?: string;
+  soilType?: string;
+  climateRequirement?: string;
+  reasons?: string[];
+  tips?: string[];
+  requirements?: {
+    rainfall?: string;
+    temperature?: string;
+    soilPH?: string;
+    fertilizer?: string;
+  };
+  image?: string;
+  marketPrice?: {
     current: number;
     trend: 'up' | 'down' | 'stable';
     currency: string;
@@ -279,4 +307,22 @@ export interface Activity {
   timestamp: string;
   priority: 'low' | 'medium' | 'high';
   status: 'completed' | 'pending' | 'in-progress';
+}
+
+// Add missing DiseasePrediction interface
+export interface DiseasePrediction {
+  disease: string;
+  confidence: number;
+  symptoms: string[];
+  treatment: string[];
+  prevention: string[];
+}
+
+// Add missing CropRecommendationRequest interface
+export interface CropRecommendationRequest {
+  location: string;
+  soilType: string;
+  previousCrops: string[];
+  season?: string;
+  farmSize?: number;
 }

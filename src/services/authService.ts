@@ -1,24 +1,31 @@
 import axios from 'axios';
 import API_CONFIG from '../config/apiConfig';
 
-export interface LoginData {
+interface LoginData {
   email: string;
   password: string;
 }
 
 export interface RegisterData {
-  name: string;
   email: string;
   password: string;
-  confirmPassword: string;
-  role?: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  location?: string;
+  farmSize?: string;
+  cropTypes?: string[];
 }
 
 export interface User {
   id: string;
   name: string;
   email: string;
+  firstName: string;
+  lastName: string;
   role: string;
+  subscriptionTier?: 'free' | 'premium' | 'enterprise';
+  isVerified: boolean;
   createdAt: string;
 }
 
@@ -101,6 +108,24 @@ class AuthService {
       };
     } catch (error: any) {
       console.error('Registration error:', error);
+      
+      // Check for specific error responses
+      if (error.response?.status === 503) {
+        return {
+          success: false,
+          message: 'Service temporarily unavailable. Please try again in a moment.'
+        };
+      }
+      
+      // Check if it's a network error and try development fallback
+      if (error.code === 'ERR_NETWORK' && import.meta.env.DEV) {
+        console.warn('Network error detected, backend server may not be running on the expected port');
+        return {
+          success: false,
+          message: 'Unable to connect to server. Please ensure the backend is running on port 5000.'
+        };
+      }
+      
       return {
         success: false,
         message: error.response?.data?.message || 'Registration failed. Please try again.'
@@ -112,6 +137,35 @@ class AuthService {
   async login(loginData: LoginData): Promise<AuthResponse> {
     try {
       console.log('Sending login data:', loginData);
+      
+      // Development fallback - remove this in production
+      if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+        console.warn('Using mock login - start your backend server for full functionality');
+        
+        // Mock successful login
+        const mockUser = {
+          id: '1',
+          name: 'Test User',
+          email: loginData.email,
+          role: 'user',
+          firstName: 'Test',
+          lastName: 'User',
+          isVerified: true,
+          subscriptionTier: 'free' as const,
+          createdAt: new Date().toISOString()
+        };
+        
+        this.setToken('mock_token_12345');
+        this.setUser(mockUser);
+        
+        return {
+          success: true,
+          message: 'Mock login successful',
+          user: mockUser,
+          token: 'mock_token_12345'
+        };
+      }
+
       const response = await this.api.post(API_CONFIG.ENDPOINTS.AUTH.LOGIN, loginData);
       
       if (response.data.status === 'success') {
@@ -139,70 +193,19 @@ class AuthService {
       };
     } catch (error: any) {
       console.error('Login error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Login failed. Please check your credentials.'
-      };
-    }
-  }
-
-  // Send OTP for verification
-  async sendOTP(email: string): Promise<OTPResponse> {
-    try {
-      const response = await this.api.post('/v1/auth/send-otp', { email });
-      return {
-        success: response.data.status === 'success',
-        message: response.data.message,
-        otpSent: response.data.status === 'success'
-      };
-    } catch (error: any) {
-      console.error('Send OTP error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to send OTP. Please try again.'
-      };
-    }
-  }
-
-  // Verify OTP
-  async verifyOTP(otpData: OTPVerification): Promise<AuthResponse> {
-    try {
-      const response = await this.api.post('/v1/auth/verify-otp', otpData);
       
-      if (response.data.status === 'success') {
+      // Check if it's a network error
+      if (error.code === 'ERR_NETWORK' && import.meta.env.DEV) {
+        console.warn('Network error detected, backend server may not be running on the expected port');
         return {
-          success: true,
-          message: response.data.message
+          success: false,
+          message: 'Unable to connect to server. Please ensure the backend is running on port 5000.'
         };
       }
       
       return {
         success: false,
-        message: response.data.message || 'OTP verification failed. Please try again.'
-      };
-    } catch (error: any) {
-      console.error('OTP verification error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'OTP verification failed. Please try again.'
-      };
-    }
-  }
-
-  // Resend OTP
-  async resendOTP(email: string): Promise<OTPResponse> {
-    try {
-      const response = await this.api.post('/auth/resend-otp', { email });
-      return {
-        success: true,
-        message: response.data.message,
-        otpSent: response.data.otpSent
-      };
-    } catch (error: any) {
-      console.error('Resend OTP error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to resend OTP. Please try again.'
+        message: error.response?.data?.message || 'Login failed. Please check your credentials.'
       };
     }
   }
@@ -273,51 +276,35 @@ class AuthService {
     }
   }
 
-  // Get user statistics
-  async getUserStats(): Promise<{ success: boolean; stats?: any; message?: string }> {
-    try {
-      const response = await this.api.get('/v1/users/stats');
-      return {
-        success: true,
-        stats: response.data.stats
-      };
-    } catch (error: any) {
-      console.error('Get user stats error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to get user statistics'
-      };
-    }
-  }
-
   // Logout user
-  logout(): void {
+  async logout(): Promise<AuthResponse> {
     try {
+      // Call logout endpoint
+      await this.api.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
+      
       // Clear stored data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
-      // Optional: Call logout endpoint if it exists
-      this.api.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT).catch(() => {
-        // Ignore errors for logout endpoint
-      });
-    } catch (error) {
+      return {
+        success: true,
+        message: 'Logged out successfully'
+      };
+    } catch (error: any) {
       console.error('Logout error:', error);
+      
+      // Still clear local storage even if API call fails
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error during logout'
+      };
     }
   }
 
-  // Get current user from localStorage
-  getCurrentUser(): User | null {
-    try {
-      const userStr = localStorage.getItem('user');
-      return userStr ? JSON.parse(userStr) : null;
-    } catch (error) {
-      console.error('Error parsing user from localStorage:', error);
-      return null;
-    }
-  }
-
-  // Get token from localStorage  
+  // Token and user management
   getToken(): string | null {
     return localStorage.getItem('token');
   }
@@ -326,10 +313,14 @@ class AuthService {
     localStorage.setItem('token', token);
   }
 
-  // User management
   getUser(): User | null {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (error) {
+      console.error('Error parsing user from localStorage:', error);
+      return null;
+    }
   }
 
   setUser(user: User): void {
@@ -345,13 +336,13 @@ class AuthService {
 
   // Check if user is verified
   isVerified(): boolean {
-    const user = this.getCurrentUser();
+    const user = this.getUser();
     return user?.isVerified || false;
   }
 
   // Check if trial expired
   isTrialExpired(): boolean {
-    const user = this.getCurrentUser();
+    const user = this.getUser();
     if (!user || user.subscriptionTier !== 'free') return false;
     
     const trialDuration = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
@@ -361,7 +352,7 @@ class AuthService {
 
   // Check if user has access to feature
   hasFeatureAccess(feature: string): boolean {
-    const user = this.getCurrentUser();
+    const user = this.getUser();
     if (!user) return false;
     
     if (user.subscriptionTier === 'enterprise') return true;
@@ -371,45 +362,6 @@ class AuthService {
     // Free tier with expired trial has limited access
     const freeFeatures = ['weather', 'basic-crops', 'community'];
     return freeFeatures.includes(feature);
-  }
-
-  // Forgot password
-  async forgotPassword(email: string): Promise<OTPResponse> {
-    try {
-      const response = await this.api.post('/auth/forgot-password', { email });
-      return {
-        success: true,
-        message: response.data.message,
-        otpSent: response.data.otpSent
-      };
-    } catch (error: any) {
-      console.error('Forgot password error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to send reset email'
-      };
-    }
-  }
-
-  // Reset password
-  async resetPassword(email: string, otp: string, newPassword: string): Promise<AuthResponse> {
-    try {
-      const response = await this.api.post('/auth/reset-password', {
-        email,
-        otp,
-        newPassword
-      });
-      return {
-        success: true,
-        message: response.data.message
-      };
-    } catch (error: any) {
-      console.error('Reset password error:', error);
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Password reset failed'
-      };
-    }
   }
 }
 

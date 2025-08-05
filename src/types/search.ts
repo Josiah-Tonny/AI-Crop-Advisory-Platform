@@ -10,19 +10,23 @@ export interface SearchQuery {
 
 export interface SearchResponse {
   weather?: {
-    current: WeatherData;
-    forecast: WeatherData[];
+    current: any;
+    forecast?: any;
+    location?: string;
   };
   recommendations?: CropRecommendation[];
   soilAnalysis?: {
+    location: string;
     ph: number;
-    nutrients: {
-      nitrogen: number;
-      phosphorus: number;
-      potassium: number;
-    };
-    texture: string;
+    nitrogen: number;
+    phosphorus: number;
+    potassium: number;
+    organicMatter: number;
+    moisture: number;
+    temperature: number;
+    healthScore: number;
     recommendations: string[];
+    lastUpdated: string;
   };
   pestControl?: {
     identifiedPests: string[];
@@ -39,16 +43,19 @@ export interface SearchResponse {
   error?: string;
 }
 
-export interface WeatherData {
-  current: {
-    temp: number;
-    humidity: number;
-    windSpeed: number;
-    condition: string;
+export interface CropRecommendation {
+  id?: string;
+  name: string;
+  category?: string;
+  suitability: number;
+  plantingDate: string;
+  expectedYield: string;
+  reasons?: string[];
+  tips?: string[];
+  requirements?: {
+    rainfall: string;
+    temperature: string;
+    soilPH: string;
+    fertilizer: string;
   };
-  forecast: Array<{
-    date: string;
-    temp: number;
-    condition: string;
-  }>;
 }
