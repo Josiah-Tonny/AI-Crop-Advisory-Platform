@@ -640,7 +640,8 @@ export const pestService = {
           cropType: cropType
         },
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
         }
       });
       return response.data;
@@ -655,7 +656,8 @@ export const pestService = {
       const response = await axios.get(`${API_BASE_URL}/pest/common-pests`, {
         params: { cropType },
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
         }
       });
       return response.data;
@@ -669,7 +671,8 @@ export const pestService = {
     try {
       const response = await axios.get(`${API_BASE_URL}/pest/details/${pestId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
         }
       });
       return response.data;

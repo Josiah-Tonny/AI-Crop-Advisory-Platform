@@ -60,11 +60,13 @@ const SettingsPage: React.FC = () => {
     const loadSettings = async () => {
       try {
         setIsLoading(true);
-        // In a real implementation, you would fetch these from your API
-        // const response = await authService.getUserSettings();
-        // if (response.success && response.settings) {
-        //   setSettings(response.settings);
-        // }
+        // Fetch user settings from API
+        const response = await authService.getUserSettings();
+        if (response.success && response.settings) {
+          setSettings(response.settings);
+        } else {
+          throw new Error(response.message || 'Failed to load settings');
+        }
       } catch (error) {
         console.error('Failed to load settings:', error);
         toast({
@@ -116,9 +118,12 @@ const SettingsPage: React.FC = () => {
   const handleSaveSettings = async () => {
     try {
       setIsSaving(true);
-      // In a real implementation, you would save to your API
-      // const response = await authService.updateUserSettings(settings);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Save settings to the API
+      const response = await authService.updateUserSettings(settings);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to update settings');
+      }
       
       toast({
         title: 'Success',
@@ -139,8 +144,13 @@ const SettingsPage: React.FC = () => {
 
   const handleExportData = async () => {
     try {
-      // In a real implementation, you would trigger a data export
-      // await authService.exportUserData();
+      // Trigger data export via API
+      const response = await authService.exportUserData();
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to export data');
+      }
+      
       toast({
         title: 'Export Started',
         description: 'Your data export has been started. You will receive an email with a download link when it\'s ready.',
@@ -159,8 +169,13 @@ const SettingsPage: React.FC = () => {
   const handleDeleteAccount = async () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.')) {
       try {
-        // In a real implementation, you would call the delete account API
-        // await authService.deleteAccount();
+        // Call the account deletion API
+        const response = await authService.deleteAccount();
+        
+        if (!response.success) {
+          throw new Error(response.message || 'Failed to delete account');
+        }
+        
         toast({
           title: 'Account Deletion Requested',
           description: 'Your account deletion request has been received. You will receive a confirmation email to complete the process.',

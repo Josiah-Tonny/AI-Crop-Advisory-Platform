@@ -4,7 +4,7 @@ import SearchInterface from './SearchInterface';
 import ResultsDisplay from './ResultsDisplay';
 import { SearchQuery, SearchResponse } from '../../types/search';
 import { weatherService } from '../../services/api';
-import { getCropRecommendations } from '../../services/aiService';
+import { aimlService } from '../../services/aimlService';
 import toast from 'react-hot-toast';
 
 const AIAdvisoryPage: React.FC = () => {
@@ -74,55 +74,50 @@ const AIAdvisoryPage: React.FC = () => {
         case 'crop-recommendation':
           try {
             console.log('Generating crop recommendations...');
-            const recommendations = await getCropRecommendations({
-              location: query.location,
+            // Get weather data for location
+            const currentWeather = await weatherService.getCurrentWeather(lat, lon);
+            
+            // Use aimlService to get crop recommendations with real-time data
+            const cropRecommendationData = await aimlService.getCropRecommendations({
+              location: { lat, lon },
               soilType: query.soilType || 'loam',
-              previousCrops: [],
-              season: query.season,
-              farmSize: query.farmSize
+              previousCrops: query.previousCrops || [],
+              weatherData: {
+                temperature: currentWeather.main?.temp,
+                humidity: currentWeather.main?.humidity
+              }
             });
             
-            if (!recommendations || recommendations.length === 0) {
-              // Provide fallback recommendations
-              const fallbackRecommendations = [
-                {
-                  id: '1',
-                  name: 'Maize',
-                  suitability: 75,
-                  plantingDate: 'March-April',
-                  expectedYield: '4-6 tons/hectare',
-                  reasons: ['Suitable for most soil types', 'Good market demand', 'Familiar crop'],
-                  tips: ['Plant at the beginning of the rainy season', 'Use certified seeds']
-                },
-                {
-                  id: '2',
-                  name: 'Beans',
-                  suitability: 70,
-                  plantingDate: 'March-April or October-November',
-                  expectedYield: '1-2 tons/hectare',
-                  reasons: ['Improves soil fertility', 'Short growing season', 'High protein content'],
-                  tips: ['Intercrop with maize for better yields', 'Ensure good drainage']
-                }
-              ];
-              console.log('Using fallback recommendations');
-              setResults({ recommendations: fallbackRecommendations });
-            } else {
-              // Transform recommendations to ensure consistent structure
-              const transformedRecommendations = recommendations.map((rec, index) => ({
-                id: rec.id || index.toString(),
-                name: rec.name || rec.crop || 'Unknown Crop',
-                suitability: rec.suitability || rec.confidence * 100 || 70,
-                plantingDate: rec.plantingDate || rec.plantingTime || 'March-April',
-                expectedYield: rec.expectedYield || '3-5 tons/hectare',
-                reasons: rec.reasons || ['Good conditions for this crop'],
-                tips: rec.tips || ['Follow best agricultural practices'],
-                requirements: rec.requirements || {},
-                ...rec
-              }));
-              
-              setResults({ recommendations: transformedRecommendations });
-              console.log('Crop recommendations generated successfully');
+            if (!cropRecommendationData || !cropRecommendationData.recommendations || cropRecommendationData.recommendations.length === 0) {
+              throw new Error('No crop recommendations available for this location');
             }
+            
+            // Transform recommendations to ensure consistent structure
+            const transformedRecommendations = cropRecommendationData.recommendations.map((rec: any, index: number) => ({
+              id: rec.id || index.toString(),
+              name: rec.name || 'Unknown Crop',
+              suitability: rec.suitability || 70,
+              plantingDate: rec.growthPeriod || 'Seasonal',
+              expectedYield: rec.expectedYield || 'Variable',
+              reasons: rec.reasons || ['Suitable for your location'],
+              tips: rec.tips || ['Follow recommended agricultural practices'],
+              requirements: {
+                water: rec.waterRequirement || 'Medium',
+                soil: rec.soilType || query.soilType || 'Loam',
+                temperature: `${currentWeather.main?.temp - 5}°C to ${currentWeather.main?.temp + 5}°C`
+              }
+            }));
+            
+            setResults({ 
+              recommendations: transformedRecommendations,
+              weatherSummary: cropRecommendationData.weatherSummary || {
+                temperature: currentWeather.main?.temp,
+                humidity: currentWeather.main?.humidity,
+                soilType: query.soilType || 'loam',
+                growingSeason: 'Current'
+              }
+            });
+            console.log('Crop recommendations generated successfully');
           } catch (cropError) {
             console.error('Crop recommendation error:', cropError);
             throw new Error('Unable to generate crop recommendations. Please try again with different parameters.');
@@ -132,42 +127,37 @@ const AIAdvisoryPage: React.FC = () => {
         case 'soil-analysis':
           try {
             console.log('Performing soil analysis...');
-            // Generate realistic soil analysis based on location
-            const soilAnalysis = {
-              location: fullLocationName,
-              overallHealth: 'Good',
-              results: {
-                ph: {
-                  value: (6.2 + (Math.random() - 0.5) * 1.5).toFixed(1),
-                  status: 'optimal',
-                  recommendation: 'pH level is within optimal range for most crops'
-                },
-                nitrogen: {
-                  value: Math.round(45 + Math.random() * 40) + ' ppm',
-                  status: 'adequate',
-                  recommendation: 'Consider nitrogen-rich fertilizer for better yields'
-                },
-                phosphorus: {
-                  value: Math.round(25 + Math.random() * 30) + ' ppm',
-                  status: 'optimal',
-                  recommendation: 'Phosphorus levels are good for root development'
-                },
-                potassium: {
-                  value: Math.round(180 + Math.random() * 120) + ' ppm',
-                  status: 'adequate',
-                  recommendation: 'Add potassium fertilizer during fruiting stage'
-                }
-              },
-              recommendations: [
-                'Apply organic compost to improve soil structure',
-                'Test soil pH regularly and adjust as needed',
-                'Consider crop rotation to maintain soil health',
-                'Add nitrogen-rich fertilizer before planting season'
-              ],
-              lastUpdated: new Date().toISOString()
-            };
+            // Get weather data for location
+            const currentWeather = await weatherService.getCurrentWeather(lat, lon);
             
-            setResults({ soilAnalysis });
+            // Use aimlService to get soil analysis with real-time data
+            const soilAnalysisData = await aimlService.getSoilAnalysis(
+              { lat, lon },
+              {
+                cropType: query.cropType || 'General Crops',
+                soilType: query.soilType,
+                previousCrops: query.previousCrops,
+                weatherData: {
+                  temperature: currentWeather.main?.temp,
+                  humidity: currentWeather.main?.humidity,
+                  rainfall: currentWeather.rain?.['1h'] || 0
+                }
+              }
+            );
+            
+            if (!soilAnalysisData) {
+              throw new Error('No soil analysis data available for this location');
+            }
+            
+            // Use the response directly or transform it if needed
+            setResults({ 
+              soilAnalysis: {
+                ...soilAnalysisData,
+                location: fullLocationName,
+                lastUpdated: new Date().toISOString()
+              } 
+            });
+            
             console.log('Soil analysis completed');
           } catch (soilError) {
             console.error('Soil analysis error:', soilError);
@@ -180,48 +170,26 @@ const AIAdvisoryPage: React.FC = () => {
             console.log('Generating pest control advice...');
             const currentWeather = await weatherService.getCurrentWeather(lat, lon);
             
-            const pestControl = {
+            // Use aimlService to get pest control recommendations with real-time data
+            const pestControlData = await aimlService.getPestControl({
               cropType: query.cropType || 'General Crops',
+              location: { lat, lon },
+              symptoms: query.symptoms || []
+            });
+            
+            if (!pestControlData) {
+              throw new Error('No pest control data available for this location and crop');
+            }
+            
+            // Use the response directly or transform it if needed to match the expected structure
+            const pestControl = {
+              ...pestControlData,
               location: fullLocationName,
               weatherConditions: {
-                temperature: currentWeather.temperature,
-                humidity: currentWeather.humidity,
-                riskLevel: currentWeather.humidity > 70 ? 'high' : currentWeather.humidity > 50 ? 'moderate' : 'low'
-              },
-              identifiedPests: [
-                {
-                  name: 'Fall Armyworm',
-                  symptoms: [
-                    'Irregular holes in leaves',
-                    'Damaged growing points',
-                    'Frass (insect droppings) visible',
-                    'Stunted plant growth'
-                  ],
-                  treatment: 'Apply Bt-based biopesticides or appropriate chemical control',
-                  prevention: 'Regular field monitoring and early detection practices'
-                },
-                {
-                  name: 'Aphids',
-                  symptoms: [
-                    'Yellowing of leaves',
-                    'Sticky honeydew on plants',
-                    'Curled or distorted leaves',
-                    'Sooty mold growth'
-                  ],
-                  treatment: 'Use insecticidal soap or neem oil applications',
-                  prevention: 'Encourage beneficial insects and avoid over-fertilization'
-                }
-              ],
-              generalAdvice: [
-                'Monitor crops daily for early pest detection',
-                'Use integrated pest management (IPM) approaches',
-                'Apply biological control methods when possible',
-                'Maintain proper field sanitation',
-                `Current humidity: ${currentWeather.humidity}% - ${currentWeather.humidity > 70 ? 'High pest risk' : 'Moderate pest risk'}`
-              ],
-              weatherBasedAdvice: currentWeather.humidity > 70 
-                ? 'High humidity increases pest risk. Increase monitoring frequency and consider preventive treatments.'
-                : 'Current weather conditions are favorable. Maintain regular monitoring schedule.'
+                temperature: currentWeather.main?.temp,
+                humidity: currentWeather.main?.humidity,
+                riskLevel: (currentWeather.main?.humidity || 0) > 70 ? 'high' : (currentWeather.main?.humidity || 0) > 50 ? 'moderate' : 'low'
+              }
             };
             
             setResults({ pestControl });
@@ -237,67 +205,35 @@ const AIAdvisoryPage: React.FC = () => {
             console.log('Generating irrigation advice...');
             const currentWeather = await weatherService.getCurrentWeather(lat, lon);
             
-            // Get forecast data safely
-            let forecastList = [];
+            // Get forecast data if needed
             try {
-              const forecastData = await weatherService.getForecast(lat, lon, 5);
-              forecastList = forecastData.list || [];
-            } catch (forecastError) {
+              await weatherService.getForecast(lat, lon);
+              // We don't need to use the forecast directly as the aimlService will
+              // handle getting the forecast data it needs
+            } catch {
               console.warn('Forecast unavailable, using current weather for irrigation advice');
             }
             
-            const avgRainfall = forecastList.length > 0 ? 
-              forecastList.slice(0, 5).reduce((sum: number, day: any) => sum + (day.rain?.['3h'] || 0), 0) / 5 : 0;
-            
-            const irrigation = {
+            // Use aimlService to get irrigation recommendations with real-time data
+            const irrigationData = await aimlService.getIrrigationRecommendations({
+              location: { lat, lon },
               cropType: query.cropType || 'General Crops',
-              location: fullLocationName,
-              dailyForecast: {
-                expectedRainfall: avgRainfall,
-                irrigationNeeded: Math.max(15, 30 - avgRainfall * 3),
-                recommendation: avgRainfall > 5 ? 'Reduce irrigation - sufficient rainfall expected' : 'Maintain regular irrigation schedule'
-              },
-              irrigationSchedule: Array.from({ length: 5 }, (_, i) => {
-                const date = new Date();
-                date.setDate(date.getDate() + i);
-                const rainExpected = Math.random() * 10;
-                return {
-                  date: date.toISOString(),
-                  rainExpected: rainExpected.toFixed(1),
-                  irrigationNeeded: rainExpected < 3,
-                  amount: rainExpected < 3 ? '20-25mm' : '0mm',
-                  timing: rainExpected < 3 ? 'Early morning (6:00-8:00 AM)' : 'Not needed'
-                };
-              }),
-              methods: [
-                {
-                  name: 'Drip Irrigation',
-                  efficiency: '90-95%',
-                  suitability: 'High',
-                  cost: 'Medium'
-                },
-                {
-                  name: 'Sprinkler System',
-                  efficiency: '75-85%',
-                  suitability: 'Medium',
-                  cost: 'Low'
-                },
-                {
-                  name: 'Furrow Irrigation',
-                  efficiency: '60-70%',
-                  suitability: 'Low',
-                  cost: 'Very Low'
-                }
-              ],
-              tips: [
-                `Current conditions: ${Math.round(currentWeather.temperature)}°C, ${currentWeather.humidity}% humidity`,
-                avgRainfall > 5 ? 'Reduce irrigation - sufficient rainfall expected' : 'Maintain regular irrigation schedule',
-                currentWeather.humidity < 50 ? 'Increase watering frequency due to low humidity' : 'Standard watering schedule recommended',
-                'Monitor soil moisture levels regularly',
-                'Use drip irrigation for water efficiency',
-                'Water early morning or late evening to reduce evaporation',
-                'Check soil moisture before irrigating to avoid overwatering'
-              ]
+              soilType: query.soilType,
+              fieldSize: query.fieldSize,
+              weatherData: {
+                temperature: currentWeather.main?.temp,
+                humidity: currentWeather.main?.humidity
+              }
+            });
+            
+            if (!irrigationData) {
+              throw new Error('No irrigation data available for this location and crop');
+            }
+            
+            // Use the response directly or transform it if needed
+            const irrigation = {
+              ...irrigationData,
+              location: fullLocationName
             };
             
             setResults({ irrigation });

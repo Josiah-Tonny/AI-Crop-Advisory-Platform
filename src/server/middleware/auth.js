@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-// Verify access token
-export const authenticate = async (req, res, next) => {
+// Default export middleware function for ES module compatibility
+const authenticate = async (req, res, next) => {
   try {
     let token;
     
@@ -69,3 +69,6 @@ export const isVerified = (req, res, next) => {
     message: 'Please verify your email address to access this resource.'
   });
 };
+
+// Export the authentication middleware as default export for ES module compatibility
+export default authenticate;

@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Sprout, 
   MapPin, 
-  Calendar, 
   TrendingUp, 
   Droplets, 
   Thermometer,
-  DollarSign,
   Clock,
   Search,
   Filter,
@@ -19,28 +17,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { weatherService, cropDatabase, cropCategories } from '../../services/api';
+import { weatherService } from '../../services/api';
+import { aimlService } from '../../services/aimlService';
+import ErrorFallback from '../ui/ErrorFallback';
+import { WeatherData } from '../../types';
 
 interface CropRecommendation {
-  crop: string;
-  suitability: number;
-  yield: string;
-  profitability: string;
-  growthDuration: string;
-  reasons: string[];
-  challenges: string[];
-}
-
-// Add proper types and fix missing declarations
-interface WeatherData {
-  temperature: number;
-  humidity: number;
-  forecast: Array<{ precipitation: number }>;
-  main: {
-    temp: number;
-    humidity: number;
-  };
   name: string;
+  suitability: number;
+  waterRequirement: string;
+  growthPeriod: string;
+  expectedYield: string;
+  tips: string[];
+  profitability?: string;
+  challenges?: string[];
 }
 
 const CropsPage: React.FC = () => {
@@ -48,145 +38,61 @@ const CropsPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [weatherData, setWeatherData] = useState<any>(null);
-  const [location, setLocation] = useState({ lat: -1.2921, lon: 36.8219 }); // Nairobi default
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [location] = useState({ lat: -1.2921, lon: 36.8219 }); // Nairobi default
 
   useEffect(() => {
     loadCropRecommendations();
-  }, [location]);
+  }, [loadCropRecommendations]);
+  
+  const [soilType] = useState('loam'); // Default soil type
 
-  const loadCropRecommendations = async () => {
+  const loadCropRecommendations = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       // Get current weather data using the improved weather service
       const weather = await weatherService.getCurrentWeather(location.lat, location.lon);
       setWeatherData(weather);
 
-      // Generate crop recommendations based on real weather data
-      const cropRecommendations = await generateCropRecommendations(weather, location);
-      setRecommendations(cropRecommendations);
+      // Format weather data for AI API
+      const weatherDataForAI = {
+        temperature: weather.temperature || weather.main?.temp,
+        humidity: weather.humidity || weather.main?.humidity,
+        windSpeed: weather.windSpeed || weather.wind?.speed || 0,
+        rainfall: weather.forecast && weather.forecast.length > 0 ? weather.forecast[0].precipitation : 0
+      };
+      
+      // Use aimlService to get crop recommendations
+      const response = await aimlService.getCropRecommendations({
+        location: location,
+        soilType: soilType,
+        weatherData: weatherDataForAI
+      });
+      
+      // Transform the response to match our component's expected format
+      const transformedRecommendations = response.recommendations.map(crop => ({
+        name: crop.name,
+        suitability: crop.suitability,
+        waterRequirement: crop.waterRequirement,
+        growthPeriod: crop.growthPeriod,
+        expectedYield: crop.expectedYield,
+        tips: crop.tips || [],
+        challenges: []
+      }));
+      
+      setRecommendations(transformedRecommendations);
     } catch (error) {
       console.error('Failed to load crop recommendations:', error);
+      setError('Unable to load crop recommendations. Please check your connection and try again.');
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateCropRecommendations = async (weather: WeatherData, location: any): Promise<CropRecommendation[]> => {
-    const recommendations: CropRecommendation[] = [];
-    
-    // Get current season (simplified for demo)
-    const month = new Date().getMonth();
-    const isRainySeason = month >= 2 && month <= 5; // March to June
-
-    Object.entries(cropDatabase).forEach(([key, crop]) => {
-      const suitability = calculateCropSuitability(crop, weather, isRainySeason);
-      const reasons = getSuitabilityReasons(crop, weather, suitability);
-      const challenges = getCropChallenges(crop, weather);
-
-      recommendations.push({
-        crop: key,
-        suitability,
-        yield: crop.yield,
-        profitability: crop.profitability,
-        growthDuration: crop.growthDuration,
-        reasons,
-        challenges
-      });
-    });
-
-    // Sort by suitability score
-    return recommendations.sort((a, b) => b.suitability - a.suitability);
-  };
-
-  const calculateCropSuitability = (crop: any, weather: WeatherData, isRainySeason: boolean): number => {
-    let score = 50; // Base score
-
-    // Temperature suitability based on real weather data
-    const temp = weather.temperature;
-    const [minTemp, maxTemp] = crop.optimalTemp.split('-').map((t: string) => parseInt(t));
-    if (temp >= minTemp && temp <= maxTemp) {
-      score += 25;
-    } else if (Math.abs(temp - (minTemp + maxTemp) / 2) <= 5) {
-      score += 15;
-    } else {
-      score -= 10;
-    }
-
-    // Humidity and rainfall from real weather data
-    const humidity = weather.humidity;
-    // Safe handling of forecast data
-    const avgRainfall = weather.forecast && weather.forecast.length > 0 
-      ? weather.forecast.reduce((sum, day) => sum + (day.precipitation || 0), 0) / weather.forecast.length 
-      : 0;
-    
-    if (crop.name.includes('Rice') && humidity > 70) score += 20;
-    if (crop.name.includes('Cassava') && humidity < 60) score += 15;
-    if (crop.name.includes('Tomato') && humidity > 80) score -= 15;
-
-    // Rainfall patterns from forecast
-    if (avgRainfall > 5 && ['maize', 'rice', 'beans'].includes(key)) score += 10;
-    if (avgRainfall < 2 && ['cassava', 'sorghum'].includes(key)) score += 10;
-
-    // Seasonal factors
-    if (isRainySeason) {
-      if (['maize', 'beans', 'rice'].includes(key)) score += 15;
-    } else {
-      if (['cassava', 'coffee'].includes(key)) score += 10;
-    }
-
-    // Market demand factor
-    if (crop.marketDemand === 'Very High') score += 10;
-    if (crop.marketDemand === 'High') score += 5;
-
-    return Math.min(100, Math.max(0, score));
-  };
-
-  const getSuitabilityReasons = (crop: any, weather: WeatherData, suitability: number): string[] => {
-    const reasons = [];
-    
-    if (suitability > 80) {
-      reasons.push('Excellent weather conditions for growth');
-      reasons.push(`High market demand (${crop.marketDemand})`);
-    } else if (suitability > 60) {
-      reasons.push('Good growing conditions');
-      reasons.push('Suitable temperature range');
-    } else {
-      reasons.push('Challenging but possible to grow');
-    }
-
-    if (crop.profitability === 'Very High') {
-      reasons.push('High profit potential');
-    }
-
-    if (weather.temperature >= 20 && weather.temperature <= 30) {
-      reasons.push('Optimal temperature range');
-    }
-
-    return reasons;
-  };
-
-  const getCropChallenges = (crop: any, weather: WeatherData): string[] => {
-    const challenges = [];
-    
-    if (weather.temperature > 35) {
-      challenges.push('High temperature stress risk');
-    }
-    
-    if (weather.humidity > 80) {
-      challenges.push('High disease pressure from humidity');
-    }
-    
-    if (crop.diseases && crop.diseases.length > 0) {
-      challenges.push(`Common diseases: ${crop.diseases.slice(0, 2).join(', ')}`);
-    }
-    
-    if (crop.pests && crop.pests.length > 0) {
-      challenges.push(`Pest management needed: ${crop.pests.slice(0, 2).join(', ')}`);
-    }
-
-    return challenges;
-  };
+  }, [location, soilType]);
+  
+  // These functions remain useful for UI purposes
+  
 
   const getSuitabilityColor = (score: number) => {
     if (score >= 80) return 'text-green-600 bg-green-100';
@@ -201,22 +107,62 @@ const CropsPage: React.FC = () => {
     return 'Poor';
   };
 
-  const filteredRecommendations = recommendations.filter(rec => {
-    const crop = cropDatabase[rec.crop as keyof typeof cropDatabase];
-    const matchesCategory = selectedCategory === 'all' || 
-      Object.entries(cropCategories).some(([category, crops]) => 
-        category === selectedCategory && crops.includes(rec.crop)
-      );
+  const filteredRecommendations = recommendations.filter(crop => {
+    // Simple category matching based on crop name
+    let matchesCategory = selectedCategory === 'all';
+    
+    if (!matchesCategory) {
+      // Map crop names to likely categories based on common types
+      const cropNameLower = crop.name.toLowerCase();
+      if (selectedCategory === 'cereals' && 
+          ['maize', 'rice', 'wheat', 'sorghum', 'millet', 'corn', 'barley', 'oat'].some(c => cropNameLower.includes(c))) {
+        matchesCategory = true;
+      } else if (selectedCategory === 'legumes' && 
+          ['bean', 'pea', 'lentil', 'soybean', 'groundnut', 'peanut'].some(c => cropNameLower.includes(c))) {
+        matchesCategory = true;
+      } else if (selectedCategory === 'vegetables' && 
+          ['tomato', 'onion', 'cabbage', 'pepper', 'carrot', 'lettuce', 'spinach'].some(c => cropNameLower.includes(c))) {
+        matchesCategory = true;
+      } else if (selectedCategory === 'rootCrops' && 
+          ['cassava', 'potato', 'yam', 'sweet potato', 'taro'].some(c => cropNameLower.includes(c))) {
+        matchesCategory = true;
+      } else if (selectedCategory === 'cashCrops' && 
+          ['coffee', 'tea', 'cotton', 'sugarcane', 'tobacco'].some(c => cropNameLower.includes(c))) {
+        matchesCategory = true;
+      } else if (selectedCategory === 'fruits' && 
+          ['banana', 'mango', 'apple', 'orange', 'avocado', 'citrus', 'pineapple'].some(c => cropNameLower.includes(c))) {
+        matchesCategory = true;
+      }
+    }
+    
+    // Search matching
     const matchesSearch = crop.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
+  const [error, setError] = useState<string | null>(null);
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
           <p className="text-gray-600">Analyzing crop suitability...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <ErrorFallback 
+            title="Crop Recommendations Unavailable"
+            message={error}
+            retry={loadCropRecommendations}
+            isNetworkError={true}
+          />
         </div>
       </div>
     );
@@ -292,10 +238,9 @@ const CropsPage: React.FC = () => {
 
         {/* Crop Recommendations Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRecommendations.map((recommendation, index) => {
-            const crop = cropDatabase[recommendation.crop as keyof typeof cropDatabase];
-            const suitabilityColor = getSuitabilityColor(recommendation.suitability);
-            const suitabilityLabel = getSuitabilityLabel(recommendation.suitability);
+          {filteredRecommendations.map((crop, index) => {
+            const suitabilityColor = getSuitabilityColor(crop.suitability);
+            const suitabilityLabel = getSuitabilityLabel(crop.suitability);
 
             return (
               <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -315,9 +260,9 @@ const CropsPage: React.FC = () => {
                   <div className="mb-4">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-gray-700">Suitability</span>
-                      <span className="text-sm font-bold">{recommendation.suitability}%</span>
+                      <span className="text-sm font-bold">{crop.suitability}%</span>
                     </div>
-                    <Progress value={recommendation.suitability} className="h-2" />
+                    <Progress value={crop.suitability} className="h-2" />
                   </div>
 
                   {/* Key Metrics */}
@@ -325,51 +270,51 @@ const CropsPage: React.FC = () => {
                     <div className="text-center p-2 bg-blue-50 rounded-lg">
                       <Clock className="w-4 h-4 text-blue-600 mx-auto mb-1" />
                       <div className="text-xs text-gray-600">Duration</div>
-                      <div className="text-sm font-semibold">{crop.growthDuration}</div>
+                      <div className="text-sm font-semibold">{crop.growthPeriod}</div>
                     </div>
                     <div className="text-center p-2 bg-green-50 rounded-lg">
                       <TrendingUp className="w-4 h-4 text-green-600 mx-auto mb-1" />
                       <div className="text-xs text-gray-600">Yield</div>
-                      <div className="text-sm font-semibold">{crop.yield}</div>
+                      <div className="text-sm font-semibold">{crop.expectedYield}</div>
                     </div>
                   </div>
 
-                  {/* Profitability */}
+                  {/* Water Requirement */}
                   <div className="flex items-center justify-between mb-4 p-2 bg-yellow-50 rounded-lg">
                     <div className="flex items-center">
-                      <DollarSign className="w-4 h-4 text-yellow-600 mr-2" />
-                      <span className="text-sm font-medium">Profitability</span>
+                      <Droplets className="w-4 h-4 text-blue-600 mr-2" />
+                      <span className="text-sm font-medium">Water Need</span>
                     </div>
-                    <Badge variant={crop.profitability === 'Very High' ? 'default' : 'secondary'}>
-                      {crop.profitability}
+                    <Badge variant={crop.waterRequirement === 'Low' ? 'secondary' : 'default'}>
+                      {crop.waterRequirement}
                     </Badge>
                   </div>
 
-                  {/* Reasons */}
+                  {/* Tips */}
                   <div className="mb-4">
                     <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
                       <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
-                      Why This Crop?
+                      Growing Tips
                     </h4>
                     <ul className="space-y-1">
-                      {recommendation.reasons.slice(0, 2).map((reason, idx) => (
+                      {crop.tips.slice(0, 2).map((tip, idx) => (
                         <li key={idx} className="text-xs text-gray-600 flex items-start">
                           <div className="w-1 h-1 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                          {reason}
+                          {tip}
                         </li>
                       ))}
                     </ul>
                   </div>
 
                   {/* Challenges */}
-                  {recommendation.challenges.length > 0 && (
+                  {crop.challenges && crop.challenges.length > 0 && (
                     <div className="mb-4">
                       <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
                         <AlertCircle className="w-4 h-4 text-orange-600 mr-1" />
                         Challenges
                       </h4>
                       <ul className="space-y-1">
-                        {recommendation.challenges.slice(0, 2).map((challenge, idx) => (
+                        {crop.challenges.slice(0, 2).map((challenge, idx) => (
                           <li key={idx} className="text-xs text-gray-600 flex items-start">
                             <div className="w-1 h-1 bg-orange-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                             {challenge}
@@ -379,29 +324,33 @@ const CropsPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Growing Conditions */}
+                  {/* Weather Conditions */}
                   <div className="border-t pt-3">
                     <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
                       <Info className="w-4 h-4 text-blue-600 mr-1" />
-                      Growing Conditions
+                      Current Weather Impact
                     </h4>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-gray-600">Temperature:</span>
-                        <div className="font-medium">{crop.optimalTemp}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Soil pH:</span>
-                        <div className="font-medium">{crop.soilPH}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Rainfall:</span>
-                        <div className="font-medium">{crop.rainfall}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Spacing:</span>
-                        <div className="font-medium">{crop.spacing}</div>
-                      </div>
+                      {weatherData && (
+                        <>
+                          <div>
+                            <span className="text-gray-600">Temperature:</span>
+                            <div className="font-medium">{weatherData.temperature}°C</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Humidity:</span>
+                            <div className="font-medium">{weatherData.humidity}%</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Location:</span>
+                            <div className="font-medium">{weatherData.name}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Condition:</span>
+                            <div className="font-medium">{weatherData.weather?.[0]?.description || 'N/A'}</div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
