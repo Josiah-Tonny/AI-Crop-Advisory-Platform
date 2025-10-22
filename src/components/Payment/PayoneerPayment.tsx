@@ -165,4 +165,4 @@ const PayoneerPayment: React.FC<PayoneerPaymentProps> = ({ planId }) => {
   );
 };
 
-export default Payoneerayment;
+export default PayoneerPayment;
