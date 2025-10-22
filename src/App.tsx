@@ -23,6 +23,7 @@ import EducationPage from './components/Education/EducationPage';
 import CommunityPage from './components/Community/CommunityPage';
 import ProfilePage from './components/Profile/ProfilePage';
 import SettingsPage from './components/Settings/SettingsPage';
+import PaymentPage from './components/Payment/PaymentPage';
 
 function App() {
   return (
@@ -146,6 +147,14 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <SettingsPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/payment" element={
+              <ProtectedRoute>
+                <Layout>
+                  <PaymentPage />
                 </Layout>
               </ProtectedRoute>
             } />
