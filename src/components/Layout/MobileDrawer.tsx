@@ -12,7 +12,8 @@ import {
   Users,
   Settings,
   HelpCircle,
-  X
+  X,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) => {
   ];
 
   const secondaryNavigation = [
+    { name: 'Subscription', href: '/payment', icon: CreditCard },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Help', href: '/help', icon: HelpCircle },
   ];
