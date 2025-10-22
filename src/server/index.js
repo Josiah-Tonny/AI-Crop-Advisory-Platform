@@ -225,6 +225,37 @@ app.use('/api/irrigation', (req, res, next) => {
 // Use irrigation routes
 app.use('/api/irrigation', irrigationRoutes);
 
+// Import and configure payment routes
+import paymentRoutes from './routes/payments.js';
+logger.info('Loaded payment routes');
+
+// Payment routes - require authentication
+app.use('/api/payments', (req, res, next) => {
+  // Allow unauthenticated access to plans endpoint
+  if (req.path === '/plans' && req.method === 'GET') {
+    return next();
+  }
+  
+  // Allow webhooks without auth (they verify with signatures)
+  if (req.path.includes('/webhook') || req.path.includes('/callback')) {
+    return next();
+  }
+  
+  // For all other payment endpoints, require API key
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey && apiKey === process.env.AIMLAPI_AI_API_KEY) {
+    req.isApiAuthenticated = true;
+    return next();
+  }
+  
+  return res.status(401).json({ 
+    success: false, 
+    message: 'Authentication required' 
+  });
+});
+
+app.use('/api/payments', paymentRoutes);
+
 // Create auth middleware for pests endpoints
 app.use('/api/pests', (req, res, next) => {
   // First check for API key in header
