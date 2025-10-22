@@ -1,18 +1,23 @@
 import axios from 'axios';
 import { WeatherData } from '../types';
 
-// Get API key from environment variable with fallback
-const AIMLAPI_AI_API_KEY = import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e';
+// Get API key from environment variable - NO FALLBACK for security
+const AIMLAPI_AI_API_KEY = import.meta.env.VITE_AIMLAPI_AI_API_KEY;
 
 // Backend URL for any server-side APIs
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+// Verify API key is configured
+if (!AIMLAPI_AI_API_KEY) {
+  console.error('VITE_AIMLAPI_AI_API_KEY is not configured. Please check your .env file.');
+}
 
 // Create axios instance for AI API service
 const aimlClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'x-api-key': AIMLAPI_AI_API_KEY // Make sure the header name matches exactly what the server expects
+    'x-api-key': AIMLAPI_AI_API_KEY
   },
   timeout: 30000 // 30 seconds
 });
