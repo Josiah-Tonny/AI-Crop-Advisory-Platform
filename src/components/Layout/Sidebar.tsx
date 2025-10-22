@@ -11,7 +11,8 @@ import {
   BookOpen,
   Users,
   Settings,
-  HelpCircle
+  HelpCircle,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ const Sidebar: React.FC = () => {
   ];
 
   const secondaryNavigation = [
+    { name: 'Subscription', href: '/payment', icon: CreditCard },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Help', href: '/help', icon: HelpCircle },
   ];
