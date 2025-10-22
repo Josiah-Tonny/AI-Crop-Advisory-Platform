@@ -202,7 +202,28 @@ app.get('/api/pest-test/common-pests', (req, res) => {
   res.json({ success: true, message: 'Direct pest route working' });
 });
 
+// Import and configure irrigation routes
+import irrigationRoutes from './routes/irrigation.js';
+logger.info('Loaded irrigation routes');
 
+// Create auth middleware for irrigation endpoints (same pattern as pest)
+app.use('/api/irrigation', (req, res, next) => {
+  // First check for API key in header
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey && apiKey === process.env.AIMLAPI_AI_API_KEY) {
+    // API key is valid, skip token check
+    req.isApiAuthenticated = true;
+    return next();
+  }
+  
+  return res.status(401).json({ 
+    success: false, 
+    message: 'Invalid or missing API key' 
+  });
+});
+
+// Use irrigation routes
+app.use('/api/irrigation', irrigationRoutes);
 
 // Create auth middleware for pests endpoints
 app.use('/api/pests', (req, res, next) => {
