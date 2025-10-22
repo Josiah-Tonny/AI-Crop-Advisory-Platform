@@ -184,7 +184,7 @@ export const aimlService = {
     weatherData?: Partial<WeatherData>
   }) => {
     try {
-      // Call the real API endpoint
+      // Call the real API endpoint - NO FALLBACK DATA
       const response = await aimlClient.post('/crops/recommend', {
         location: params.location,
         soilType: params.soilType,
@@ -195,49 +195,9 @@ export const aimlService = {
       return response.data;
     } catch (error) {
       console.error('Failed to get crop recommendations:', error);
-      // Handle API error gracefully
-      if (axios.isAxiosError(error) && error.response?.status === 404) {
-        // If endpoint not available yet, provide fallback data for development
-        console.warn('Crop recommendation API endpoint not available, using fallback data');
-        
-        // Provide minimal fallback data based on params
-        const temp = params.weatherData?.temperature || 25;
-        const humidity = params.weatherData?.humidity || 60;
-        
-        return {
-          recommendations: [
-            {
-              name: temp > 25 ? 'Maize' : 'Wheat',
-              suitability: temp > 25 ? 85 : 75,
-              waterRequirement: 'Medium',
-              growthPeriod: '90-120 days',
-              expectedYield: 'High',
-              tips: [
-                'Regular monitoring for pests and diseases',
-                'Follow local agricultural extension advice'
-              ]
-            },
-            {
-              name: humidity > 70 ? 'Rice' : 'Millet',
-              suitability: humidity > 70 ? 90 : 80,
-              waterRequirement: humidity > 70 ? 'High' : 'Low',
-              growthPeriod: humidity > 70 ? '120-150 days' : '60-90 days',
-              expectedYield: humidity > 70 ? 'High' : 'Medium',
-              tips: [
-                'Consider local climate patterns',
-                'Use disease-resistant varieties'
-              ]
-            }
-          ],
-          weatherSummary: {
-            temperature: params.weatherData?.temperature || 25,
-            humidity: params.weatherData?.humidity || 60,
-            soilType: params.soilType || 'loam',
-            growingSeason: 'Current'
-          }
-        };
-      }
-      throw error; // Let calling component handle the error
+      // Re-throw error - let calling component handle it
+      // NO FALLBACK DATA - endpoint must be implemented
+      throw error;
     }
   },
 
@@ -250,7 +210,7 @@ export const aimlService = {
     skillLevel?: 'beginner' | 'intermediate' | 'advanced'
   }) => {
     try {
-      // Call real API endpoint
+      // Call real API endpoint - NO FALLBACK DATA
       const response = await aimlClient.get('/education/content', {
         params: params
       });
@@ -258,29 +218,9 @@ export const aimlService = {
       return response.data;
     } catch (error) {
       console.error('Failed to get educational content:', error);
-      // Handle API error gracefully
-      if (axios.isAxiosError(error) && error.response?.status === 404) {
-        // If endpoint not available yet, provide minimal fallback data for development
-        console.warn('Educational content API endpoint not available, using fallback data');
-        
-        return {
-          courses: [
-            {
-              id: '1',
-              title: 'Soil Health Management',
-              description: 'Learn about maintaining healthy soil for optimal crop growth',
-              skillLevel: 'beginner',
-              duration: '30 minutes',
-              topics: ['soil', 'nutrients', 'organic farming'],
-              url: 'https://example.com/courses/soil-health',
-              thumbnail: 'https://via.placeholder.com/300x200?text=Soil+Health'
-            }
-          ],
-          totalCount: 1,
-          recommendations: []
-        };
-      }
-      throw error; // Let calling component handle the error
+      // Re-throw error - let calling component handle it
+      // NO FALLBACK DATA - endpoint must be implemented
+      throw error;
     }
   },
 
