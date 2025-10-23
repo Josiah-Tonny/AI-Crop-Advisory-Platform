@@ -19,7 +19,7 @@
     "morgan": "^1.10.1",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.7",
+    "nodemailer": "^7.0.7",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
