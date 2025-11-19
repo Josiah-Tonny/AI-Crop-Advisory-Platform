@@ -33,7 +33,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         
         {/* Main content */}
         <main className="py-6 pb-20 lg:pb-6">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 animate-fade-in" style={{ opacity: 1, transition: 'opacity 0.3s ease-out' }}>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 animate-fade-in">
             {children}
           </div>
         </main>

@@ -86,7 +86,6 @@ const RegisterPage: React.FC = () => {
       } else {
         toast.error('Registration failed. Please try again.');
       }
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -101,7 +100,7 @@ const RegisterPage: React.FC = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-yellow-400 to-orange-600 rounded-full opacity-10 blur-3xl animate-pulse animation-delay-4000"></div>
       </div>
 
-      <Card className="w-full max-w-2xl bg-white/95 backdrop-blur-xl shadow-2xl border border-gray-200/60 relative overflow-hidden transform transition-all duration-500 hover:scale-[1.01]">
+      <Card className="w-full max-w-2xl bg-white/95 backdrop-blur-xl shadow-2xl border border-gray-200/60 relative overflow-hidden transform transition-all duration-500 hover:scale-[1.02]">
         {/* Decorative gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-emerald-50/50 opacity-50"></div>
         

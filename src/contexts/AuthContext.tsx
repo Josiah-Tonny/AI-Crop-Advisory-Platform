@@ -6,14 +6,12 @@ import toast from 'react-hot-toast';
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
-
   loading: boolean;
   isTrialExpired: () => boolean;
   hasFeatureAccess: (feature: string) => boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<boolean>;
   logout: () => void;
-
   updateUser: (user: AuthUser) => void;
   refreshProfile: () => Promise<void>;
 }
@@ -56,7 +54,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(parsedUser);
           
           // Try to fetch fresh user data in the background
-          authService.getProfile().then(result => {
+          try {
+            const result = await authService.getProfile();
             if (result.success && result.user) {
               // Convert ServiceUser to AuthUser by adding missing properties
               const authUser = {
@@ -65,13 +64,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 updatedAt: new Date(result.user.createdAt) // Use createdAt as fallback for updatedAt
               } as AuthUser;
               setUser(authUser);
+              // Update localStorage with fresh data
+              localStorage.setItem('user', JSON.stringify(authUser));
             }
-          }).catch(() => {
+          } catch (error) {
             // Background profile fetch failed, using cached data
-          });
+            console.warn('Failed to refresh user profile, using cached data');
+          }
         }
       } catch (error) {
-        // Auth check error occurred
+        // Auth check error occurred, clear potentially invalid data
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setUser(null);
       } finally {
         setLoading(false);
         setAuthChecked(true);
@@ -92,6 +97,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updatedAt: new Date(response.user.createdAt) // Use createdAt as fallback for updatedAt
         } as AuthUser;
         setUser(authUser);
+        // Store in localStorage
+        localStorage.setItem('user', JSON.stringify(authUser));
+        localStorage.setItem('token', response.token || '');
         toast.success('Login successful!');
         return true;
       } else {
@@ -99,7 +107,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
     } catch (error) {
-      // Login error occurred
       toast.error('Login failed. Please try again.');
       return false;
     }
@@ -116,6 +123,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updatedAt: new Date(response.user.createdAt) // Use createdAt as fallback for updatedAt
         } as AuthUser;
         setUser(authUser);
+        // Store in localStorage
+        localStorage.setItem('user', JSON.stringify(authUser));
+        localStorage.setItem('token', response.token || '');
         toast.success('Registration successful! Please check your email for verification.');
         return true;
       } else {
@@ -123,7 +133,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
     } catch (error) {
-      // Registration error occurred
       toast.error('Registration failed. Please try again.');
       return false;
     }
@@ -132,6 +141,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     authService.logout();
     setUser(null);
+    // Clear localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
   const updateUser = (updatedUser: AuthUser) => {
@@ -151,9 +163,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updatedAt: new Date(result.user.createdAt) // Use createdAt as fallback for updatedAt
         } as AuthUser;
         setUser(authUser);
+        // Update localStorage with fresh data
+        localStorage.setItem('user', JSON.stringify(authUser));
       }
     } catch (error) {
       // Refresh profile error occurred
+      console.error('Failed to refresh profile:', error);
     }
   };
 

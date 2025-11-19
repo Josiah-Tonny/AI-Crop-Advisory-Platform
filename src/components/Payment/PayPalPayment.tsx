@@ -34,7 +34,8 @@ const PayPalPayment: React.FC<PayPalPaymentProps> = ({ planId }) => {
         toast.error('Failed to create PayPal subscription');
         setLoading(false);
       }
-    } catch {
+    } catch (error) {
+      console.error('Error processing PayPal payment:', error);
       // Error handling for PayPal payment
       toast.error('Payment failed');
       setLoading(false);

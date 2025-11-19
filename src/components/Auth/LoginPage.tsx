@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Loader2, Sprout, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -16,6 +16,7 @@ const LoginPage: React.FC = () => {
   
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -40,17 +41,15 @@ const LoginPage: React.FC = () => {
       
       if (success) {
         toast.success('Login successful!');
-        // Redirect to dashboard after successful login
-        navigate('/dashboard');
+        // Redirect to the page the user was trying to access, or to dashboard
+        const from = (location.state as any)?.from?.pathname || '/dashboard';
+        navigate(from, { replace: true });
       } else {
         toast.error('Invalid email or password');
       }
     } catch (error: unknown) {
-      // Error handling for login
       const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
       toast.error(errorMessage);
-      // Login error occurred
-      throw error;
     } finally {
       setLoading(false);
     }

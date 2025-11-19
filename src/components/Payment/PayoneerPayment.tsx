@@ -34,7 +34,8 @@ const PayoneerPayment: React.FC<PayoneerPaymentProps> = ({ planId }) => {
         toast.error('Failed to create Payoneer payment');
         setLoading(false);
       }
-    } catch {
+    } catch (error) {
+      console.error('Error processing Payoneer payment:', error);
       // Error handling for Payoneer payment
       toast.error('Payment failed');
       setLoading(false);

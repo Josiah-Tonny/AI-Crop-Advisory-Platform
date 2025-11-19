@@ -1,6 +1,6 @@
 import express from 'express';
-import Discussion from '../models/Discussion.js';
-import { authMiddleware } from '../middleware/auth.js';
+import Discussion from '../models/Discussion.ts';
+import authenticate from '../middleware/auth.js';
 import { validateDiscussion } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -114,7 +114,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create a new discussion
-router.post('/', authMiddleware, validateDiscussion, async (req, res) => {
+router.post('/', authenticate, validateDiscussion, async (req, res) => {
   try {
     const { title, content, category, tags, images } = req.body;
     
@@ -148,7 +148,7 @@ router.post('/', authMiddleware, validateDiscussion, async (req, res) => {
 });
 
 // Add a reply to a discussion
-router.post('/:id/replies', authMiddleware, async (req, res) => {
+router.post('/:id/replies', authenticate, async (req, res) => {
   try {
     const { content } = req.body;
     
@@ -198,7 +198,7 @@ router.post('/:id/replies', authMiddleware, async (req, res) => {
 });
 
 // Like/unlike a discussion
-router.post('/:id/like', authMiddleware, async (req, res) => {
+router.post('/:id/like', authenticate, async (req, res) => {
   try {
     const discussion = await Discussion.findById(req.params.id);
     
@@ -239,7 +239,7 @@ router.post('/:id/like', authMiddleware, async (req, res) => {
 });
 
 // Like/unlike a reply
-router.post('/:id/replies/:replyId/like', authMiddleware, async (req, res) => {
+router.post('/:id/replies/:replyId/like', authenticate, async (req, res) => {
   try {
     const discussion = await Discussion.findById(req.params.id);
     
@@ -290,7 +290,7 @@ router.post('/:id/replies/:replyId/like', authMiddleware, async (req, res) => {
 });
 
 // Update a discussion
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authenticate, async (req, res) => {
   try {
     const { title, content, category, tags, images } = req.body;
     
@@ -336,7 +336,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete a discussion
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authenticate, async (req, res) => {
   try {
     const discussion = await Discussion.findById(req.params.id);
     

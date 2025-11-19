@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "server": "node src/server/index.js",
     "dev:frontend": "vite",
-    "dev:backend": "node src/server/index.js",
+    "dev:backend": "tsx src/server/index.js",
     "dev:all": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "start": "node src/server/index.js",
     "start:dev": "nodemon src/server/index.js",

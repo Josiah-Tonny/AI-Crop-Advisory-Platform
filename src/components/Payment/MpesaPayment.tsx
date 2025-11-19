@@ -65,7 +65,8 @@ const MpesaPayment: React.FC<MpesaPaymentProps> = ({ planId }) => {
       } else {
         toast.error('Failed to initiate M-Pesa payment');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error processing M-Pesa payment:', error);
       // Error handling for M-Pesa payment
       toast.error('Payment failed');
     } finally {

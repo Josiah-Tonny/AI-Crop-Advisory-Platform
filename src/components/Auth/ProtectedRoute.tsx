@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -14,15 +14,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-
-  // Redirect to intended page after login
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      // Store the current location for redirecting after login
-      localStorage.setItem('redirectPath', location.pathname);
-    }
-  }, [loading, isAuthenticated, location]);
 
   // Check if user has required role
   const hasRequiredRole = () => {
@@ -30,6 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return user && requiredRole.includes(user.role);
   };
 
+  // Show loading spinner while checking auth status
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -41,14 +33,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
+  // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // If doesn't have required role, redirect to unauthorized
   if (!hasRequiredRole()) {
     return <Navigate to="/unauthorized" replace />;
   }
 
+  // If authenticated and has required role, render children
   return <>{children}</>;
 };
 

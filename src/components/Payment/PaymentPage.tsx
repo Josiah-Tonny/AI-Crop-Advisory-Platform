@@ -123,6 +123,34 @@ const PaymentPage: React.FC = () => {
     }
   };
 
+  // Fallback timeout to ensure page loads even if API calls fail
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!plan && !isDemoUser) {
+        const mockPlan = {
+          id: 'monthly',
+          name: 'Monthly Plan',
+          price: 999,
+          currency: 'USD',
+          interval: 'month',
+          trialDays: 14,
+          features: [
+            'Unlimited crop recommendations',
+            'Advanced pest detection',
+            'Weather integration',
+            'Email support',
+            'Mobile app access',
+            'Priority customer support'
+          ]
+        };
+        setPlan(mockPlan);
+        console.log('Using fallback plan data');
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [plan, isDemoUser]);
+
   const paymentMethods = [
     {
       id: 'stripe' as PaymentMethod,
@@ -189,10 +217,6 @@ const PaymentPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
-      {/* Debug indicator */}
-      <div style={{ position: 'fixed', top: 0, right: 0, background: 'red', color: 'white', padding: '5px', zIndex: 9999, fontSize: '12px' }}>
-        Payment Page Loaded
-      </div>
       <div className="max-w-6xl mx-auto py-8">
         {/* Header */}
         <div className="text-center mb-8">
