@@ -1,21 +1,17 @@
 import { Handler } from '@netlify/functions';
-import { MongoClient, Db } from 'mongodb';
+import mongoose from 'mongoose';
 
 // MongoDB connection cache
-let cachedDb: Db | null = null;
+let isConnected: boolean = false;
 
-async function connectToDatabase(): Promise<Db> {
-  if (cachedDb) {
-    return cachedDb;
+async function connectToDatabase() {
+  if (isConnected) {
+    return;
   }
 
-  const client = new MongoClient(process.env.MONGODB_URL || 'mongodb://localhost:27017/agri_advisor_dev');
-  await client.connect();
-  
-  const db = client.db(process.env.DB_NAME || 'agri_advisor_dev');
-  cachedDb = db;
-  
-  return db;
+  const mongoUrl = process.env.MONGODB_URL || 'mongodb://localhost:27017/agri_advisor_dev';
+  await mongoose.connect(mongoUrl);
+  isConnected = true;
 }
 
 // Weather endpoint handler
@@ -45,6 +41,7 @@ export const weather: Handler = async (event) => {
       body: JSON.stringify(response.data)
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Failed to fetch weather data' })
@@ -76,8 +73,11 @@ export const pest: Handler = async (event) => {
 
       // Optionally store in MongoDB
       try {
-        const db = await connectToDatabase();
-        await db.collection('pest_detections').insertOne({
+        await connectToDatabase();
+        const db = mongoose.connection.db;
+        if (db) {
+          const collection = db.collection('pest_detections');
+          await collection.insertOne({
           cropType,
           location,
           symptoms,
@@ -86,6 +86,7 @@ export const pest: Handler = async (event) => {
           detection: response.data,
           createdAt: new Date()
         });
+        }
       } catch (dbError) {
         console.warn('Failed to store in MongoDB:', dbError);
       }
@@ -95,9 +96,10 @@ export const pest: Handler = async (event) => {
         body: JSON.stringify(response.data)
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'Failed to detect pests', details: error.message })
+        body: JSON.stringify({ error: 'Failed to detect pests', details: errorMessage })
       };
     }
   }
@@ -153,9 +155,10 @@ export const pest: Handler = async (event) => {
         })
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'Failed to fetch pest data', details: error.message })
+        body: JSON.stringify({ error: 'Failed to fetch pest data', details: errorMessage })
       };
     }
   }
@@ -195,8 +198,11 @@ export const soil: Handler = async (event) => {
 
     // Optionally store in MongoDB
     try {
-      const db = await connectToDatabase();
-      await db.collection('soil_analysis').insertOne({
+      await connectToDatabase();
+      const db = mongoose.connection.db;
+      if (db) {
+        const collection = db.collection('soil_analysis');
+        await collection.insertOne({
         location,
         cropType,
         soilType,
@@ -205,6 +211,7 @@ export const soil: Handler = async (event) => {
         analysis: response.data,
         createdAt: new Date()
       });
+      }
     } catch (dbError) {
       console.warn('Failed to store in MongoDB:', dbError);
     }
@@ -214,9 +221,10 @@ export const soil: Handler = async (event) => {
       body: JSON.stringify(response.data)
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to analyze soil', details: error.message })
+      body: JSON.stringify({ error: 'Failed to analyze soil', details: errorMessage })
     };
   }
 };
@@ -250,8 +258,11 @@ export const irrigation: Handler = async (event) => {
 
     // Optionally store in MongoDB
     try {
-      const db = await connectToDatabase();
-      await db.collection('irrigation_recommendations').insertOne({
+      await connectToDatabase();
+      const db = mongoose.connection.db;
+      if (db) {
+        const collection = db.collection('irrigation_recommendations');
+        await collection.insertOne({
         location,
         cropType,
         soilType,
@@ -260,6 +271,7 @@ export const irrigation: Handler = async (event) => {
         recommendation: response.data,
         createdAt: new Date()
       });
+      }
     } catch (dbError) {
       console.warn('Failed to store in MongoDB:', dbError);
     }
@@ -269,9 +281,10 @@ export const irrigation: Handler = async (event) => {
       body: JSON.stringify(response.data)
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to get irrigation recommendations', details: error.message })
+      body: JSON.stringify({ error: 'Failed to get irrigation recommendations', details: errorMessage })
     };
   }
 };
@@ -304,8 +317,11 @@ export const crop: Handler = async (event) => {
 
     // Optionally store in MongoDB
     try {
-      const db = await connectToDatabase();
-      await db.collection('crop_recommendations').insertOne({
+      await connectToDatabase();
+      const db = mongoose.connection.db;
+      if (db && db.collection) {
+        const collection = db.collection('crop_recommendations');
+        await collection.insertOne({
         location,
         soilType,
         previousCrops,
@@ -313,6 +329,7 @@ export const crop: Handler = async (event) => {
         recommendation: response.data,
         createdAt: new Date()
       });
+      }
     } catch (dbError) {
       console.warn('Failed to store in MongoDB:', dbError);
     }
@@ -322,9 +339,10 @@ export const crop: Handler = async (event) => {
       body: JSON.stringify(response.data)
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to get crop recommendations', details: error.message })
+      body: JSON.stringify({ error: 'Failed to get crop recommendations', details: errorMessage })
     };
   }
 };
