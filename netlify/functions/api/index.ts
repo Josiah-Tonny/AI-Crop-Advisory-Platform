@@ -289,7 +289,169 @@ export const irrigation: Handler = async (event) => {
   }
 };
 
-// Crop recommendations handler
+// Auth login handler
+export const login: Handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  const { email, password } = JSON.parse(event.body || '{}');
+  
+  try {
+    await connectToDatabase();
+    const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection failed');
+    }
+
+    // Find user by email
+    const collection = db.collection('users');
+    const user = await collection.findOne({ email });
+
+    if (!user) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'Invalid credentials' })
+      };
+    }
+
+    // Compare password (assuming bcrypt)
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'Invalid credentials' })
+      };
+    }
+
+    // Generate JWT token
+    const jwt = require('jsonwebtoken');
+    
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not configured');
+    }
+    
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      jwtSecret,
+      { expiresIn: '7d' }
+    );
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        status: 'success',
+        message: 'Login successful',
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name
+        }
+      })
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Login failed', details: errorMessage })
+    };
+  }
+};
+
+// Auth register handler
+export const register: Handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  const { email, password, name } = JSON.parse(event.body || '{}');
+  
+  try {
+    await connectToDatabase();
+    const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection failed');
+    }
+
+    // Check if user already exists
+    const collection = db.collection('users');
+    const existingUser = await collection.findOne({ email });
+
+    if (existingUser) {
+      return {
+        statusCode: 409,
+        body: JSON.stringify({ error: 'User already exists' })
+      };
+    }
+
+    // Hash password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
+    const result = await collection.insertOne({
+      email,
+      password: hashedPassword,
+      name,
+      createdAt: new Date()
+    });
+
+    // Generate JWT token
+    const jwt = require('jsonwebtoken');
+    
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not configured');
+    }
+    
+    const token = jwt.sign(
+      { userId: result.insertedId, email },
+      jwtSecret,
+      { expiresIn: '7d' }
+    );
+
+    return {
+      statusCode: 201,
+      body: JSON.stringify({
+        status: 'success',
+        message: 'Registration successful',
+        token,
+        user: {
+          id: result.insertedId,
+          email,
+          name
+        }
+      })
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Registration failed', details: errorMessage })
+    };
+  }
+};
+
+// Auth logout handler
+export const logout: Handler = async (event) => {
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      status: 'success',
+      message: 'Logged out successfully'
+    })
+  };
+};
 export const crop: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
