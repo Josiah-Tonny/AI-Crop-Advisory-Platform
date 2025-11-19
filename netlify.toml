@@ -1,29 +1,13 @@
 [build]
   publish = "dist"
-  command = "npm run build"
-  functions = "netlify/functions"
+  command = "npm run build && npm install serverless-http"
 
 [build.environment]
   NODE_VERSION = "20"
 
 [[redirects]]
-  from = "/api/v1/auth/login"
-  to = "/.netlify/functions/login"
-  status = 200
-
-[[redirects]]
-  from = "/api/v1/auth/register"
-  to = "/.netlify/functions/register"
-  status = 200
-
-[[redirects]]
-  from = "/api/v1/auth/logout"
-  to = "/.netlify/functions/logout"
-  status = 200
-
-[[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to = "/.netlify/functions/api/:splat"
   status = 200
 
 [[redirects]]
