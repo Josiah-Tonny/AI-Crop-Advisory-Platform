@@ -300,6 +300,9 @@ const server = app.listen(port, '0.0.0.0', () => {
   connectToDatabase();
 });
 
+// Export app for Netlify Functions
+module.exports = app;
+
 async function connectToDatabase() {
   const MONGODB_URL = process.env.MONGODB_URL;
   
