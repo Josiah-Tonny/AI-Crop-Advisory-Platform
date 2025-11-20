@@ -87,15 +87,10 @@ class AuthService {
   // Register new user
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
-      // In production, use the auth function directly
-      const endpoint = import.meta.env.DEV 
-        ? API_CONFIG.ENDPOINTS.AUTH.REGISTER 
-        : '/api/v1/auth/register';
+      // Use the configured endpoint
+      const endpoint = API_CONFIG.ENDPOINTS.AUTH.REGISTER;
       
-      const response = await this.api.post(endpoint, {
-        ...userData,
-        action: 'register'
-      });
+      const response = await this.api.post(endpoint, userData);
       
       if (response.data.status === 'success') {
         // Store token if provided
@@ -142,15 +137,10 @@ class AuthService {
   // Login user
   async login(loginData: LoginData): Promise<AuthResponse> {
     try {
-      // In production, use the auth function directly
-      const endpoint = import.meta.env.DEV 
-        ? API_CONFIG.ENDPOINTS.AUTH.LOGIN 
-        : '/api/v1/auth/login';
+      // Use the configured endpoint
+      const endpoint = API_CONFIG.ENDPOINTS.AUTH.LOGIN;
       
-      const response = await this.api.post(endpoint, {
-        ...loginData,
-        action: 'login'
-      });
+      const response = await this.api.post(endpoint, loginData);
       
       if (response.data.status === 'success') {
         // Store token
@@ -198,14 +188,10 @@ class AuthService {
   // Get user profile
   async getProfile(): Promise<AuthResponse> {
     try {
-      // In production, use the auth function directly
-      const endpoint = import.meta.env.DEV 
-        ? API_CONFIG.ENDPOINTS.AUTH.PROFILE 
-        : '/api/v1/auth/profile';
+      // Use the configured endpoint
+      const endpoint = API_CONFIG.ENDPOINTS.AUTH.PROFILE;
       
-      const response = await this.api.post(endpoint, {
-        action: 'profile'
-      });
+      const response = await this.api.get(endpoint);
       
       if (response.data.status === 'success') {
         const user = response.data.data?.user || response.data.user;
@@ -248,15 +234,11 @@ class AuthService {
   // Logout user
   async logout(): Promise<AuthResponse> {
     try {
-      // In production, use the auth function directly
-      const endpoint = import.meta.env.DEV 
-        ? API_CONFIG.ENDPOINTS.AUTH.LOGOUT 
-        : '/api/v1/auth/logout';
+      // Use the configured endpoint
+      const endpoint = API_CONFIG.ENDPOINTS.AUTH.LOGOUT;
       
       // Call logout endpoint
-      await this.api.post(endpoint, {
-        action: 'logout'
-      });
+      await this.api.post(endpoint);
       
       // Clear stored data
       localStorage.removeItem('token');

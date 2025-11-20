@@ -9,10 +9,10 @@ export const API_CONFIG = {
   },
   ENDPOINTS: {
     AUTH: {
-      REGISTER: '/v1/auth/register',
-      LOGIN: '/v1/auth/login',
-      PROFILE: '/v1/auth/profile',
-      LOGOUT: '/v1/auth/logout',
+      REGISTER: '/api/v1/auth/register',
+      LOGIN: '/api/v1/auth/login',
+      PROFILE: '/api/v1/auth/profile',
+      LOGOUT: '/api/v1/auth/logout',
     }
   }
 };
