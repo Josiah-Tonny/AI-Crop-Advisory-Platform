@@ -277,51 +277,33 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// Serve static files from the React app in production
+// Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  // Set static folder - Vite outputs to 'dist' directory by default
-  const distPath = path.join(__dirname, '../../dist');
-  const assetsPath = path.join(distPath, 'assets');
+  // Path to the client build directory
+  const clientBuildPath = path.join(__dirname, '../../dist');
   
-  // Serve static files with proper MIME types
-  app.use('/assets', express.static(assetsPath, {
-    maxAge: '1y',
-    etag: true,
-    lastModified: true,
-    immutable: true
-  }));
+  // Log the build path for debugging
+  console.log('Serving static files from:', clientBuildPath);
   
-  // Serve other static files (like index.html, favicon, etc.)
-  app.use(express.static(distPath, {
-    maxAge: '1h',
-    etag: true,
-    lastModified: true
-  }));
+  // Serve static files from the Vite build directory
+  app.use(express.static(clientBuildPath));
   
-  // Handle SPA by serving index.html for all non-API routes
+  // Handle SPA - serve index.html for all non-API routes
   app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+    console.log('Serving index.html for route:', req.path);
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }
 
-// 404 handler - this should come after static file serving
-app.use((req, res) => {
-  // Only handle API routes with 404
+// 404 handler for API routes
+app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({
       status: 'fail',
       message: `Can't find ${req.originalUrl} on this server!`
     });
   }
-  
-  // For non-API routes in production, serve index.html and let the SPA handle routing
-  if (process.env.NODE_ENV === 'production') {
-    const distPath = path.join(__dirname, '../../dist');
-    return res.sendFile(path.join(distPath, 'index.html'));
-  }
-  
-  // In development, return a 404 for non-API routes
-  res.status(404).send('Not Found');
+  next();
 });
 
 // Error handling middleware
