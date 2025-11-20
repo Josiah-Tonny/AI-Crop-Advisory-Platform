@@ -277,12 +277,31 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    status: 'fail',
-    message: `Can't find ${req.originalUrl} on this server!`
+// Serve static files from the React app
+if (process.env.NODE_ENV === 'production') {
+  // Set static folder
+  const staticPath = path.join(__dirname, '../../dist');
+  app.use(express.static(staticPath));
+  
+  // Handle SPA by redirecting all non-API routes to index.html
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(staticPath, 'index.html'));
   });
+}
+
+// 404 handler - this should come after static file serving
+app.use((req, res) => {
+  // Only handle API routes with 404
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({
+      status: 'fail',
+      message: `Can't find ${req.originalUrl} on this server!`
+    });
+  }
+  
+  // For non-API routes, let the SPA handle 404s
+  const staticPath = path.join(__dirname, '../../dist');
+  res.sendFile(path.join(staticPath, 'index.html'));
 });
 
 // Error handling middleware
