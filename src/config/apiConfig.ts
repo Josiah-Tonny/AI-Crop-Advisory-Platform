@@ -3,11 +3,11 @@ import browserUrl from '../utils/browserUrl';
 
 // API Configuration
 export const API_CONFIG = {
-  // Base URLs - Use proxy in development, '/api' in production
+  // Base URLs - Use proxy in development, Netlify functions path in production
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 
     (import.meta.env.DEV 
       ? '/api'  // Use proxy in development
-      : '/api'),  // Use '/api' in production for Netlify functions
+      : '/.netlify/functions'),  // Use Netlify functions path in production
   
   // Weather API
   WEATHER: {

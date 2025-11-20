@@ -45,67 +45,45 @@ app.use(cookieParser());
 // Connect to MongoDB
 const connectDB = async () => {
   try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI is not defined in environment variables');
+    }
     await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
     console.log('MongoDB connected successfully');
+    return true;
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    process.exit(1);
+    return false;
   }
 };
 
 // Import and use auth routes
 import authRoutes from '../../src/server/routes/auth.js';
-app.use('/api/v1/auth', authRoutes);
 
-// Compatibility route for old auth endpoint
-app.post('/auth', (req, res) => {
-  // Redirect to the appropriate auth endpoint based on action
-  const { action } = req.body;
-  
-  switch (action) {
-    case 'login':
-      // Forward to login endpoint
-      req.url = '/api/v1/auth/login';
-      break;
-    case 'register':
-      // Forward to register endpoint
-      req.url = '/api/v1/auth/register';
-      break;
-    case 'logout':
-      // Forward to logout endpoint
-      req.url = '/api/v1/auth/logout';
-      break;
-    default:
-      return res.status(400).json({
-        status: 'error',
-        message: 'Invalid action parameter'
-      });
-  }
-  
-  // Re-dispatch the request to the appropriate route
-  app.handle(req, res);
-});
+// Mount routes with the correct base path for Netlify Functions
+app.use('/.netlify/functions/auth', authRoutes);
 
-// Test endpoint for function health check
+// Test endpoint
 app.get('/.netlify/functions/auth/test', (req, res) => {
-  res.status(200).json({
-    status: 'success',
+  res.json({ 
+    status: 'success', 
     message: 'Auth function is working',
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'development'
+    timestamp: new Date().toISOString()
   });
 });
 
 // Health check endpoint
-app.get('/', (req, res) => {
+app.get('/.netlify/functions/auth', async (req, res) => {
+  const dbStatus = await connectDB();
+  
   res.status(200).json({
     status: 'success',
     message: 'Auth function is running',
     timestamp: new Date().toISOString(),
-    mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    database: dbStatus ? 'connected' : 'disconnected'
   });
 });
 
