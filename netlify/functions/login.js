@@ -1,23 +1,95 @@
-// Simple login function for immediate deployment
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+// Login function connected to your actual database
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Mock user data (in production, this would come from your database)
-const mockUsers = [
-  {
-    id: '1',
-    email: 'test@example.com',
-    password: '$2a$10$rOzJqQZ8QxN8vL5J5J5J5uO7.5O7.5O7.5O7.5O7.5O7.5O7.5O7.', // password: test1234
-    firstName: 'Test',
-    lastName: 'User',
-    role: 'user',
-    isVerified: true,
-    subscriptionTier: 'free',
-    createdAt: new Date().toISOString()
+// ES modules equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables
+const envPath = path.resolve(__dirname, '../../.env');
+dotenv.config({ path: envPath });
+
+// User schema (matching your User model)
+const userSchema = new mongoose.Schema({
+  firstName: {
+    type: String,
+    required: [true, 'First name is required'],
+    trim: true,
+    minlength: [2, 'First name must be at least 2 characters long'],
+    maxlength: [50, 'First name cannot be longer than 50 characters']
+  },
+  lastName: {
+    type: String,
+    required: [true, 'Last name is required'],
+    trim: true,
+    minlength: [2, 'Last name must be at least 2 characters long'],
+    maxlength: [50, 'Last name cannot be longer than 50 characters']
+  },
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please provide a valid email address']
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [8, 'Password must be at least 8 characters long'],
+    select: false
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'expert'],
+    default: 'user'
+  },
+  subscriptionTier: {
+    type: String,
+    enum: ['free', 'premium', 'enterprise'],
+    default: 'free'
+  },
+  isVerified: {
+    type: Boolean,
+    default: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-];
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: function(doc, ret) {
+      delete ret.password;
+      delete ret.__v;
+      return ret;
+    }
+  }
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Create User model
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 exports.handler = async (event, context) => {
+  // Enable response checking
+  context.callbackWaitsForEmptyEventLoop = false;
+  
   try {
     // Handle preflight requests
     if (event.httpMethod === 'OPTIONS') {
@@ -65,8 +137,15 @@ exports.handler = async (event, context) => {
       };
     }
     
-    // Find user (in production, query your database)
-    const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    // Connect to MongoDB
+    if (!mongoose.connection.readyState) {
+      await mongoose.connect(process.env.MONGODB_URL, {
+        dbName: process.env.DB_NAME || 'crops'
+      });
+    }
+    
+    // Find user by email (include password for comparison)
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
     
     if (!user) {
       return {
@@ -82,10 +161,9 @@ exports.handler = async (event, context) => {
       };
     }
     
-    // Check password (in production, use bcrypt.compare)
-    const isPasswordValid = password === 'test1234'; // Simple check for testing
-    
-    if (!isPasswordValid) {
+    // Check password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
       return {
         statusCode: 401,
         headers: {
@@ -101,9 +179,9 @@ exports.handler = async (event, context) => {
     
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      'jiuytg2uhihopkmiuy78t6r5dfcgyjhiopklmjnyu7trfdcgjiopklmwdjnqit6rf5dcfgdvyubgiwhojnlkd3iu7yjiok',
-      { expiresIn: '30d' }
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET || 'jiuytg2uhihopkmiuy78t6r5dfcgyjhiopklmjnyu7trfdcgjiopklmwdjnqit6rf5dcfgdvyubgiwhojnlkd3iu7yjiok',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
     );
     
     // Return success response
@@ -119,7 +197,7 @@ exports.handler = async (event, context) => {
         token: token,
         data: {
           user: {
-            id: user.id,
+            id: user._id,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
@@ -142,8 +220,14 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({
         status: 'error',
-        message: 'An error occurred during login'
+        message: 'An error occurred during login',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       })
     };
+  } finally {
+    // Close database connection
+    if (mongoose.connection.readyState) {
+      await mongoose.connection.close();
+    }
   }
 };
