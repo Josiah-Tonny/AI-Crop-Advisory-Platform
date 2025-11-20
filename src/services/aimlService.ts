@@ -9,7 +9,7 @@ import educationService from './educationService';
 const AIMLAPI_AI_API_KEY = import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e';
 
 // Backend URL for any server-side APIs
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 // Create axios instance for AI API service
 const aimlClient = axios.create({
