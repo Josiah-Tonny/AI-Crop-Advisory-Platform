@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             react: ['react', 'react-dom'],
-            vendor: ['react-router-dom', 'axios', 'react-query'],
+            vendor: ['react-router-dom', 'axios', '@tanstack/react-query'],
           },
         },
       },
