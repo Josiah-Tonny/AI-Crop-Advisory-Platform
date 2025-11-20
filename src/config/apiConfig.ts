@@ -41,10 +41,10 @@ export const API_CONFIG = {
   ENDPOINTS: {
     // Authentication
     AUTH: {
-      LOGIN: '/v1/auth/login',
-      REGISTER: '/v1/auth/register',
-      LOGOUT: '/v1/auth/logout',
-      PROFILE: '/v1/auth/profile',
+      LOGIN: '/auth/login',
+      REGISTER: '/auth/register',
+      LOGOUT: '/auth/logout',
+      PROFILE: '/auth/me',
     },
     
     // Weather
