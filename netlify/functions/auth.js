@@ -4,6 +4,7 @@ import serverless from 'serverless-http';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import mongoose from 'mongoose';
 
 // Create Express app
 const app = express();
@@ -41,6 +42,20 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// Connect to MongoDB
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('MongoDB connected successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
+};
+
 // Import and use auth routes
 import authRoutes from '../../src/server/routes/auth.js';
 app.use('/api/v1/auth', authRoutes);
@@ -59,10 +74,6 @@ app.post('/auth', (req, res) => {
       // Forward to register endpoint
       req.url = '/api/v1/auth/register';
       break;
-    case 'profile':
-      // Forward to profile endpoint
-      req.url = '/api/v1/auth/profile';
-      break;
     case 'logout':
       // Forward to logout endpoint
       req.url = '/api/v1/auth/logout';
@@ -78,18 +89,46 @@ app.post('/auth', (req, res) => {
   app.handle(req, res);
 });
 
+// Test endpoint for function health check
+app.get('/.netlify/functions/auth/test', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Auth function is working',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Health check endpoint
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Auth function is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
-// Export Netlify Function handler
-const handler = serverless(app, {
-  basePath: '/api/v1/auth'
-});
+// Connect to MongoDB and start the server
+const startServer = async () => {
+  await connectDB();
+  
+  // Start the server only in local development
+  if (process.env.NETLIFY_DEV) {
+    const port = process.env.PORT || 8888;
+    app.listen(port, () => {
+      console.log(`Server running on http://localhost:${port}`);
+    });
+  }
+};
 
-export { handler };
+// Initialize the server
+startServer().catch(console.error);
+
+// Export Netlify Function handler
+export const handler = serverless(app);
+
+// For local development
+if (process.env.NETLIFY_DEV) {
+  console.log('Running in Netlify Dev mode');
+}

@@ -16,36 +16,41 @@
 
 # Function-specific configurations
 [functions]
-  # Increase function timeout to 10 seconds (Netlify's maximum)
   node_bundler = "esbuild"
   external_node_modules = ["mongoose"]
+  # Increase function timeout to 10 seconds (Netlify's maximum)
+  timeout = 10
 
-# Redirects for API endpoints
+# API Gateway configuration
 [[redirects]]
   from = "/api/v1/auth/*"
+  to = "/.netlify/functions/auth/:splat"
+  status = 200
+  force = true
+
+# Test endpoint for auth function
+[[redirects]]
+  from = "/test-auth"
+  to = "/.netlify/functions/auth/test"
+  status = 200
+  force = true
+
+# Health check endpoint
+[[redirects]]
+  from = "/health"
   to = "/.netlify/functions/auth"
   status = 200
   force = true
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api"
-  status = 200
-  force = true
-
-# Test endpoints
-[[redirects]]
-  from = "/test-connection"
-  to = "/.netlify/functions/test-connection"
-  status = 200
-
-[[redirects]]
-  from = "/test-auth"
-  to = "/.netlify/functions/test-auth"
-  status = 200
-
-# SPA fallback
+# SPA fallback - must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Environment variables for local development
+[dev]
+  framework = "vite"
+  targetPort = 5173
+  publish = "dist"
+  functions = "netlify/functions"
