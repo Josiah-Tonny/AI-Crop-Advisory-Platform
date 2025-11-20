@@ -8,6 +8,15 @@ import cookieParser from 'cookie-parser';
 // Create Express app
 const app = express();
 
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error in API function:', err);
+  res.status(500).json({
+    status: 'error',
+    message: 'Internal server error'
+  });
+});
+
 // Middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
@@ -63,4 +72,6 @@ app.get('/', (req, res) => {
 });
 
 // Export Netlify Function handler
-export const handler = serverless(app);
+export const handler = serverless(app, {
+  basePath: '/api'
+});

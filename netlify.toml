@@ -4,6 +4,16 @@
   functions = "netlify/functions"
 
 [[redirects]]
+  from = "/api/v1/auth/login"
+  to = "/.netlify/functions/login"
+  status = 200
+
+[[redirects]]
+  from = "/api/v1/auth/register"
+  to = "/.netlify/functions/register"
+  status = 200
+
+[[redirects]]
   from = "/api/v1/auth/*"
   to = "/.netlify/functions/auth"
   status = 200
