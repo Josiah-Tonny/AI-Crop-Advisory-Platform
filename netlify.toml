@@ -9,6 +9,19 @@
   [functions.timeout]
     max = 10  # Maximum execution time in seconds
 
+# Handle both /api/* and /api/v1/* paths
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/v1/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/api/v1/auth/*"
   to = "/.netlify/functions/auth/:splat"

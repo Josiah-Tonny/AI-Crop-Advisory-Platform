@@ -1,22 +1,13 @@
 // Netlify Function to handle auth API requests
-import express from 'express';
-import serverless from 'serverless-http';
-import cors from 'cors';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
-import mongoose from 'mongoose';
+const express = require('express');
+const serverless = require('serverless-http');
+const cors = require('cors');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const mongoose = require('mongoose');
 
 // Create Express app
 const app = express();
-
-// Add error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error in auth function:', err);
-  res.status(500).json({
-    status: 'error',
-    message: 'Internal server error'
-  });
-});
 
 // Middleware
 app.use(helmet({
@@ -42,6 +33,29 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// Test endpoint
+app.get('/.netlify/functions/auth/test', (req, res) => {
+  res.json({ status: 'success', message: 'Auth function is working' });
+});
+
+// Health check endpoint
+app.get('/.netlify/functions/auth/health', async (req, res) => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    res.json({ 
+      status: 'success', 
+      message: 'Auth function is healthy',
+      mongo: 'connected'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'MongoDB connection failed',
+      error: error.message
+    });
+  }
+});
+
 // Connect to MongoDB
 const connectDB = async () => {
   try {
@@ -61,31 +75,10 @@ const connectDB = async () => {
 };
 
 // Import and use auth routes
-import authRoutes from '../../src/server/routes/auth.js';
+const authRoutes = require('../../src/server/routes/auth.js');
 
 // Mount routes with the correct base path for Netlify Functions
 app.use('/.netlify/functions/auth', authRoutes);
-
-// Test endpoint
-app.get('/.netlify/functions/auth/test', (req, res) => {
-  res.json({ 
-    status: 'success', 
-    message: 'Auth function is working',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Health check endpoint
-app.get('/.netlify/functions/auth', async (req, res) => {
-  const dbStatus = await connectDB();
-  
-  res.status(200).json({
-    status: 'success',
-    message: 'Auth function is running',
-    timestamp: new Date().toISOString(),
-    database: dbStatus ? 'connected' : 'disconnected'
-  });
-});
 
 // Connect to MongoDB and start the server
 const startServer = async () => {
