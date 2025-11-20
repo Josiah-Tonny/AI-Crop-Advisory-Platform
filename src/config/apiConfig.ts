@@ -3,11 +3,11 @@ import browserUrl from '../utils/browserUrl';
 
 // API Configuration
 export const API_CONFIG = {
-  // Base URLs - Use proxy in development, Netlify functions path in production
+  // Base URLs - Use proxy in development, relative path in production
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 
     (import.meta.env.DEV 
-      ? '/api'  // Use proxy in development
-      : '/.netlify/functions'),  // Use Netlify functions path in production
+      ? 'http://localhost:5000'  // Local development with proxy
+      : ''),  // Empty string for production to use relative paths
   
   // Weather API
   WEATHER: {

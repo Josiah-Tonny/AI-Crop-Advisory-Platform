@@ -15,19 +15,50 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-// Configure CORS to allow requests from the Netlify frontend
+// Configure CORS to allow requests from all necessary origins
 app.use(cors({
-  origin: [
-    'https://ai-advisory-agri.netlify.app', 
-    'https://devserver-master--ai-advisory-agri.netlify.app',
-    'http://localhost:5173'
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://ai-advisory-agri.netlify.app',
+      'https://devserver-master--ai-advisory-agri.netlify.app',
+      'http://localhost:5000',
+      'http://localhost:5173'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    
+    return callback(null, true);
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-api-key'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 600
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'x-api-key',
+    'x-access-token',
+    'x-auth-token'
+  ],
+  exposedHeaders: [
+    'Content-Range',
+    'X-Content-Range',
+    'x-auth-token',
+    'x-refresh-token'
+  ],
+  maxAge: 600,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -97,7 +128,7 @@ const startServer = async () => {
 startServer().catch(console.error);
 
 // Export Netlify Function handler
-export const handler = serverless(app);
+module.exports.handler = serverless(app);
 
 // For local development
 if (process.env.NETLIFY_DEV) {
