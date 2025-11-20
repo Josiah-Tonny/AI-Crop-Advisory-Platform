@@ -3,11 +3,11 @@ import browserUrl from '../utils/browserUrl';
 
 // API Configuration
 export const API_CONFIG = {
-  // Base URLs - Use proxy in development, Netlify Functions in production
+  // Base URLs - Use proxy in development, relative paths in production
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 
     (import.meta.env.DEV 
       ? '/api'  // Use proxy in development
-      : '/.netlify/functions'),  // Use Netlify Functions in production
+      : ''),  // Use relative paths in production
   
   // Weather API
   WEATHER: {
@@ -41,10 +41,10 @@ export const API_CONFIG = {
   ENDPOINTS: {
     // Authentication
     AUTH: {
-      LOGIN: '/auth',
-      REGISTER: '/auth',
-      LOGOUT: '/auth',
-      PROFILE: '/auth',
+      LOGIN: '/api/v1/auth/login',
+      REGISTER: '/api/v1/auth/register',
+      LOGOUT: '/api/v1/auth/logout',
+      PROFILE: '/api/v1/auth/profile',
     },
     
     // Weather

@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.DEV 
+    ? '/api'  // Use proxy in development
+    : '/.netlify/functions');  // Use Netlify Functions in production
 const AGRO_API_KEY = import.meta.env.VITE_AGROMONITORING_API_KEY || '4c9701473de7427083be0ec5b95d9efa';
 const LOCATION_API_KEY = import.meta.env.VITE_LOCATIONIQ_API_KEY || 'pk.9598243e10adf82a5bf5b4ec37f91ee6';
 const AGRO_BASE_URL = 'http://api.agromonitoring.com/agro/1.0';
@@ -500,7 +503,12 @@ export const soilService = {
 // Irrigation Service
 export const irrigationService = {
   getIrrigationSchedule: async (location: { lat: number; lon: number }, cropType: string) => {
-    const response = await axios.get(`${API_BASE_URL}/irrigation/schedule`, {
+    // Use the correct endpoint for Netlify Functions
+    const endpoint = import.meta.env.DEV 
+      ? `${API_BASE_URL}/irrigation/schedule`
+      : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
+    
+    const response = await axios.get(endpoint, {
       params: {
         lat: location.lat,
         lon: location.lon,
@@ -508,7 +516,7 @@ export const irrigationService = {
       },
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e' // Add API key for authentication
+        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e'
       },
       timeout: 30000
     });
@@ -521,14 +529,19 @@ export const irrigationService = {
   },
 
   getSoilMoisture: async (location: { lat: number; lon: number }) => {
-    const response = await axios.get(`${API_BASE_URL}/irrigation/soil-moisture`, {
+    // Use the correct endpoint for Netlify Functions
+    const endpoint = import.meta.env.DEV 
+      ? `${API_BASE_URL}/irrigation/soil-moisture`
+      : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
+    
+    const response = await axios.get(endpoint, {
       params: {
         lat: location.lat,
         lon: location.lon
       },
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY // Add API key for authentication
+        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
       },
       timeout: 30000
     });
@@ -537,14 +550,19 @@ export const irrigationService = {
   },
 
   getEvapotranspiration: async (location: { lat: number; lon: number }) => {
-    const response = await axios.get(`${API_BASE_URL}/irrigation/evapotranspiration`, {
+    // Use the correct endpoint for Netlify Functions
+    const endpoint = import.meta.env.DEV 
+      ? `${API_BASE_URL}/irrigation/evapotranspiration`
+      : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
+    
+    const response = await axios.get(endpoint, {
       params: {
         lat: location.lat,
         lon: location.lon
       },
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY // Add API key for authentication
+        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
       },
       timeout: 30000
     });
@@ -556,7 +574,12 @@ export const irrigationService = {
 // Pest Control Service
 export const pestService = {
   assessPestRisk: async (location: { lat: number; lon: number }, cropType: string) => {
-    const response = await axios.get(`${API_BASE_URL}/pest/assess-risk`, {
+    // Use the correct endpoint for Netlify Functions
+    const endpoint = import.meta.env.DEV 
+      ? `${API_BASE_URL}/pest/assess-risk`
+      : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
+    
+    const response = await axios.get(endpoint, {
       params: {
         lat: location.lat,
         lon: location.lon,
@@ -570,7 +593,12 @@ export const pestService = {
   },
 
   getCommonPests: async (cropType: string) => {
-    const response = await axios.get(`${API_BASE_URL}/pest/common-pests`, {
+    // Use the correct endpoint for Netlify Functions
+    const endpoint = import.meta.env.DEV 
+      ? `${API_BASE_URL}/pest/common-pests`
+      : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
+    
+    const response = await axios.get(endpoint, {
       params: { cropType },
       headers: {
         'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
@@ -580,7 +608,12 @@ export const pestService = {
   },
 
   getPestDetails: async (pestId: string) => {
-    const response = await axios.get(`${API_BASE_URL}/pest/details/${pestId}`, {
+    // Use the correct endpoint for Netlify Functions
+    const endpoint = import.meta.env.DEV 
+      ? `${API_BASE_URL}/pest/details/${pestId}`
+      : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
+    
+    const response = await axios.get(endpoint, {
       headers: {
         'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e'
       }

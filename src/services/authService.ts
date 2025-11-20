@@ -90,7 +90,7 @@ class AuthService {
       // In production, use the auth function directly
       const endpoint = import.meta.env.DEV 
         ? API_CONFIG.ENDPOINTS.AUTH.REGISTER 
-        : '/auth';
+        : '/api/v1/auth/register';
       
       const response = await this.api.post(endpoint, {
         ...userData,
@@ -145,7 +145,7 @@ class AuthService {
       // In production, use the auth function directly
       const endpoint = import.meta.env.DEV 
         ? API_CONFIG.ENDPOINTS.AUTH.LOGIN 
-        : '/auth';
+        : '/api/v1/auth/login';
       
       const response = await this.api.post(endpoint, {
         ...loginData,
@@ -201,7 +201,7 @@ class AuthService {
       // In production, use the auth function directly
       const endpoint = import.meta.env.DEV 
         ? API_CONFIG.ENDPOINTS.AUTH.PROFILE 
-        : '/auth';
+        : '/api/v1/auth/profile';
       
       const response = await this.api.post(endpoint, {
         action: 'profile'
@@ -251,7 +251,7 @@ class AuthService {
       // In production, use the auth function directly
       const endpoint = import.meta.env.DEV 
         ? API_CONFIG.ENDPOINTS.AUTH.LOGOUT 
-        : '/auth';
+        : '/api/v1/auth/logout';
       
       // Call logout endpoint
       await this.api.post(endpoint, {
@@ -294,11 +294,12 @@ class AuthService {
     try {
       const userStr = localStorage.getItem('user');
       return userStr ? JSON.parse(userStr) : null;
-    } catch (error) {
+    } catch {
       // Error handling for localStorage parsing
       return null;
     }
   }
+
 
   setUser(user: User): void {
     localStorage.setItem('user', JSON.stringify(user));

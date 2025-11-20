@@ -9,7 +9,9 @@ NODE_ENV=development
 PORT=5000
 
 # Frontend URL (for CORS configuration)
-FRONTEND_URL=http://localhost:5173
+## FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=https://ai-advisory-agri.netlify.app
+
 
 # Application Name
 APP_NAME=AI Crop Advisory Platform

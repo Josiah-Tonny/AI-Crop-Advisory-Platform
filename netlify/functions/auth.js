@@ -1,165 +1,82 @@
-// Simple auth function
-export const handler = async (event, context) => {
-  // Handle preflight requests
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, x-api-key',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
-      }
-    };
+// Netlify Function to handle auth API requests
+import express from 'express';
+import serverless from 'serverless-http';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+
+// Create Express app
+const app = express();
+
+// Middleware
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false
+}));
+
+// Configure CORS to allow requests from the Netlify frontend
+app.use(cors({
+  origin: [
+    'https://ai-advisory-agri.netlify.app', 
+    'https://devserver-master--ai-advisory-agri.netlify.app',
+    'http://localhost:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-api-key'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 600
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// Import and use auth routes
+import authRoutes from '../../src/server/routes/auth.js';
+app.use('/api/v1/auth', authRoutes);
+
+// Compatibility route for old auth endpoint
+app.post('/auth', (req, res) => {
+  // Redirect to the appropriate auth endpoint based on action
+  const { action } = req.body;
+  
+  switch (action) {
+    case 'login':
+      // Forward to login endpoint
+      req.url = '/api/v1/auth/login';
+      break;
+    case 'register':
+      // Forward to register endpoint
+      req.url = '/api/v1/auth/register';
+      break;
+    case 'profile':
+      // Forward to profile endpoint
+      req.url = '/api/v1/auth/profile';
+      break;
+    case 'logout':
+      // Forward to logout endpoint
+      req.url = '/api/v1/auth/logout';
+      break;
+    default:
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid action parameter'
+      });
   }
   
-  // Parse the request body
-  const body = JSON.parse(event.body || '{}');
-  const { action } = body;
-  
-  // Handle different actions
-  if (action === 'login') {
-    // Simple validation
-    if (!body.email || !body.password) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          status: 'error',
-          message: 'Email and password are required'
-        })
-      };
-    }
-    
-    // Return a mock success response
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        status: 'success',
-        message: 'Login successful',
-        token: 'mock-jwt-token',
-        data: {
-          user: {
-            id: 'mock-user-id',
-            email: body.email,
-            firstName: 'Mock',
-            lastName: 'User',
-            name: 'Mock User',
-            role: 'user',
-            isVerified: true,
-            subscriptionTier: 'free',
-            createdAt: new Date().toISOString()
-          }
-        }
-      })
-    };
-  }
-  
-  if (action === 'register') {
-    // Simple validation
-    if (!body.email || !body.password || !body.firstName || !body.lastName) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          status: 'error',
-          message: 'Email, password, first name, and last name are required'
-        })
-      };
-    }
-    
-    // Return a mock success response
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        status: 'success',
-        message: 'Registration successful',
-        token: 'mock-jwt-token',
-        data: {
-          user: {
-            id: 'mock-user-id',
-            email: body.email,
-            firstName: body.firstName,
-            lastName: body.lastName,
-            name: `${body.firstName} ${body.lastName}`,
-            role: 'user',
-            isVerified: true,
-            subscriptionTier: 'free',
-            createdAt: new Date().toISOString()
-          }
-        }
-      })
-    };
-  }
-  
-  if (action === 'profile') {
-    // Return a mock profile response
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        status: 'success',
-        message: 'Profile fetched successfully',
-        data: {
-          user: {
-            id: 'mock-user-id',
-            email: 'mock@example.com',
-            firstName: 'Mock',
-            lastName: 'User',
-            name: 'Mock User',
-            role: 'user',
-            isVerified: true,
-            subscriptionTier: 'free',
-            createdAt: new Date().toISOString()
-          }
-        }
-      })
-    };
-  }
-  
-  if (action === 'logout') {
-    // Return a mock logout response
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        status: 'success',
-        message: 'Logged out successfully'
-      })
-    };
-  }
-  
-  // Default response
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    },
-    body: JSON.stringify({
-      message: 'Auth function is working',
-      path: event.path,
-      method: event.httpMethod,
-      action: action || 'no action specified'
-    })
-  };
-};
+  // Re-dispatch the request to the appropriate route
+  app.handle(req, res);
+});
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Auth function is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Export Netlify Function handler
+export const handler = serverless(app);

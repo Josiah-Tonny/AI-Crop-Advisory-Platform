@@ -36,6 +36,14 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    host: true,
+    strictPort: false,
+    allowedHosts: [
+      'localhost',
+      '.netlify.app',
+      '.ngrok.io',
+      '.local'
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
