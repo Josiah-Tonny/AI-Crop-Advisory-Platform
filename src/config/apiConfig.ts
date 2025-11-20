@@ -3,8 +3,11 @@ import browserUrl from '../utils/browserUrl';
 
 // API Configuration
 export const API_CONFIG = {
-  // Base URLs - Use port 5000 to match backend server
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  // Base URLs - Use proxy in development, Netlify Functions URL in production
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || 
+    (import.meta.env.DEV 
+      ? '/api'  // Use proxy in development
+      : 'https://ai-advisory-agri.netlify.app/.netlify/functions/api'),  // Use Netlify Functions in production
   
   // Weather API
   WEATHER: {
