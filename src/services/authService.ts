@@ -87,8 +87,15 @@ class AuthService {
   // Register new user
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
-
-      const response = await this.api.post(API_CONFIG.ENDPOINTS.AUTH.REGISTER, userData);
+      // In production, use the auth function directly
+      const endpoint = import.meta.env.DEV 
+        ? API_CONFIG.ENDPOINTS.AUTH.REGISTER 
+        : '/auth';
+      
+      const response = await this.api.post(endpoint, {
+        ...userData,
+        action: 'register'
+      });
       
       if (response.data.status === 'success') {
         // Store token if provided
@@ -135,9 +142,15 @@ class AuthService {
   // Login user
   async login(loginData: LoginData): Promise<AuthResponse> {
     try {
-
+      // In production, use the auth function directly
+      const endpoint = import.meta.env.DEV 
+        ? API_CONFIG.ENDPOINTS.AUTH.LOGIN 
+        : '/auth';
       
-      const response = await this.api.post(API_CONFIG.ENDPOINTS.AUTH.LOGIN, loginData);
+      const response = await this.api.post(endpoint, {
+        ...loginData,
+        action: 'login'
+      });
       
       if (response.data.status === 'success') {
         // Store token
@@ -185,7 +198,14 @@ class AuthService {
   // Get user profile
   async getProfile(): Promise<AuthResponse> {
     try {
-      const response = await this.api.get(API_CONFIG.ENDPOINTS.AUTH.PROFILE);
+      // In production, use the auth function directly
+      const endpoint = import.meta.env.DEV 
+        ? API_CONFIG.ENDPOINTS.AUTH.PROFILE 
+        : '/auth';
+      
+      const response = await this.api.post(endpoint, {
+        action: 'profile'
+      });
       
       if (response.data.status === 'success') {
         const user = response.data.data?.user || response.data.user;
@@ -225,36 +245,18 @@ class AuthService {
     }
   }
 
-  // Update user profile
-  async updateProfile(userData: Partial<User>): Promise<{ success: boolean; user?: User; message?: string }> {
-    try {
-      const response = await this.api.put('/v1/users/profile', userData);
-      
-      if (response.data.success) {
-        // Update local storage
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-      }
-      
-      return {
-        success: true,
-        user: response.data.user,
-        message: response.data.message
-      };
-    } catch (error: unknown) {
-      // Error handling is done via return values
-      const axiosError = error as AxiosError;
-      return {
-        success: false,
-        message: (axiosError.response?.data as ErrorResponse)?.message || 'Failed to update profile'
-      };
-    }
-  }
-
   // Logout user
   async logout(): Promise<AuthResponse> {
     try {
+      // In production, use the auth function directly
+      const endpoint = import.meta.env.DEV 
+        ? API_CONFIG.ENDPOINTS.AUTH.LOGOUT 
+        : '/auth';
+      
       // Call logout endpoint
-      await this.api.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
+      await this.api.post(endpoint, {
+        action: 'logout'
+      });
       
       // Clear stored data
       localStorage.removeItem('token');
