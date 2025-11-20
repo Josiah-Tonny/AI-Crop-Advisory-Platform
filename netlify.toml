@@ -3,24 +3,40 @@
   publish = "dist"
   functions = "netlify/functions"
 
-[[redirects]]
-  from = "/api/v1/auth/login"
-  to = "/.netlify/functions/login"
-  status = 200
+# Global CORS headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With, x-api-key"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
 
-[[redirects]]
-  from = "/api/v1/auth/register"
-  to = "/.netlify/functions/register"
-  status = 200
+# Function-specific configurations
+[functions]
+  # Increase function timeout to 10 seconds (Netlify's maximum)
+  node_bundler = "esbuild"
+  external_node_modules = ["mongoose"]
 
+# Redirects for API endpoints
 [[redirects]]
   from = "/api/v1/auth/*"
   to = "/.netlify/functions/auth"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+# Test endpoints
+[[redirects]]
+  from = "/test-connection"
+  to = "/.netlify/functions/test-connection"
   status = 200
 
 [[redirects]]
@@ -28,11 +44,7 @@
   to = "/.netlify/functions/test-auth"
   status = 200
 
-[[redirects]]
-  from = "/auth"
-  to = "/.netlify/functions/auth"
-  status = 200
-
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"

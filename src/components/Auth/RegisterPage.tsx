@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import toast from 'react-hot-toast';
+import Logo from '../ui/Logo';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({

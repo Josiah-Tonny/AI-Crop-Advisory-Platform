@@ -19,6 +19,7 @@ import {
   Wind
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Logo from '../ui/Logo';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -45,19 +46,8 @@ const Sidebar: React.FC = () => {
     <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
       <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white/95 backdrop-blur-xl border-r border-gray-200/60 px-6 pb-4 shadow-lg">
         {/* Logo */}
-        <div className="flex h-16 shrink-0 items-center">
-          <div className="flex items-center space-x-3 group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-600 rounded-lg blur-sm opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative bg-gradient-to-r from-green-500 to-emerald-600 p-2.5 rounded-lg shadow-lg transform transition-all duration-300 group-hover:scale-105 group-hover:rotate-3">
-                <Sprout className="h-6 w-6 text-white" />
-              </div>
-            </div>
-            <div className="transform transition-all duration-300 group-hover:translate-x-1">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">AgriAI</h1>
-              <p className="text-xs text-gray-500 font-medium">Smart Farming Platform</p>
-            </div>
-          </div>
+        <div className="flex h-16 shrink-0 items-center px-2">
+          <Logo variant="full" />
         </div>
 
         {/* Navigation */}

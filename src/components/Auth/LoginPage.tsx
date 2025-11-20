@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import toast from 'react-hot-toast';
+import Logo from '../ui/Logo';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -56,37 +57,30 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-green-400 to-emerald-600 rounded-full opacity-20 blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-blue-400 to-cyan-600 rounded-full opacity-20 blur-3xl animate-pulse animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-yellow-400 to-orange-600 rounded-full opacity-10 blur-3xl animate-pulse animation-delay-4000"></div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md mb-6 text-center">
+        <div className="inline-block">
+          <Logo variant="full" textSize="lg" className="mx-auto" />
+        </div>
       </div>
-
-      <Card className="w-full max-w-md bg-white/95 backdrop-blur-xl shadow-2xl border border-gray-200/60 relative overflow-hidden transform transition-all duration-500 hover:scale-[1.02]">
-        {/* Decorative gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-emerald-50/50 opacity-50"></div>
-        
-        <CardHeader className="text-center relative z-10 pb-6">
-          <div className="flex items-center justify-center mb-6 group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-600 rounded-full blur-sm opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-full shadow-lg transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-12">
-                <Sprout className="w-8 h-8 text-white" />
-              </div>
-              <Sparkles className="absolute -top-2 -right-2 w-5 h-5 text-yellow-500 animate-pulse" />
-            </div>
+      <div className="w-full max-w-md">
+        <Card className="border-0 shadow-xl overflow-hidden">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-green-400 to-emerald-600 rounded-full opacity-20 blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-blue-400 to-cyan-600 rounded-full opacity-20 blur-3xl animate-pulse animation-delay-2000"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-yellow-400 to-orange-600 rounded-full opacity-10 blur-3xl animate-pulse animation-delay-4000"></div>
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-            Welcome Back
-          </CardTitle>
-          <p className="text-gray-600 font-medium flex items-center justify-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-500" />
-            Sign in to your AGRI-ADVISOR account
-            <CheckCircle className="w-4 h-4 text-green-500" />
-          </p>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center text-gray-800">
+              Welcome to FARM AI
+            </CardTitle>
+            <p className="text-sm text-center text-gray-500 mt-2 flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              Sign in to your FARM AI account
+              <CheckCircle className="w-4 h-4 text-green-500" />
+            </p>
+          </CardHeader>
         
         <CardContent className="relative z-10">
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -193,7 +187,7 @@ const LoginPage: React.FC = () => {
         </CardContent>
       </Card>
     </div>
+  </div>
   );
 };
-
 export default LoginPage;

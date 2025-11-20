@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import Logo from '../ui/Logo';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -34,21 +35,28 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       "px-4 sm:gap-x-6 sm:px-6 lg:px-8",
       "transition-all duration-300"
     )}>
-      {/* Menu button for mobile */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          "lg:hidden touch-target transition-all duration-300",
-          "hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:scale-105 hover:shadow-md",
-          "relative overflow-hidden group"
-        )}
-        onClick={onMenuClick}
-        aria-label="Open menu"
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-        <Menu className="h-6 w-6 relative z-10" />
-      </Button>
+      <div className="flex items-center lg:hidden space-x-2">
+        {/* Menu button for mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "touch-target transition-all duration-300",
+            "hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:scale-105 hover:shadow-md",
+            "relative overflow-hidden group"
+          )}
+          onClick={onMenuClick}
+          aria-label="Open menu"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+          <Menu className="h-6 w-6 relative z-10" />
+        </Button>
+
+        {/* Mobile Logo */}
+        <div className="ml-2">
+          <Logo variant="default" textSize="sm" />
+        </div>
+      </div>
 
       {/* Separator */}
       <div className="h-6 w-px bg-gray-200 lg:hidden" aria-hidden="true" />

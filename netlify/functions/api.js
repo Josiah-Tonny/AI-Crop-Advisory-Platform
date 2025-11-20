@@ -72,6 +72,8 @@ app.get('/', (req, res) => {
 });
 
 // Export Netlify Function handler
-export const handler = serverless(app, {
+const handler = serverless(app, {
   basePath: '/api'
 });
+
+export { handler };
