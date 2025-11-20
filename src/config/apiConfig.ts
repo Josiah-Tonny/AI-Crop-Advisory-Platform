@@ -3,11 +3,11 @@ import browserUrl from '../utils/browserUrl';
 
 // API Configuration
 export const API_CONFIG = {
-  // Base URLs - Use proxy in development, relative paths in production
+  // Base URLs - Use proxy in development, '/api' in production
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 
     (import.meta.env.DEV 
       ? '/api'  // Use proxy in development
-      : '.'),  // Use relative paths in production
+      : '/api'),  // Use '/api' in production for Netlify functions
   
   // Weather API
   WEATHER: {
@@ -49,80 +49,80 @@ export const API_CONFIG = {
     
     // Weather
     WEATHER: {
-      CURRENT: 'weather/current',
-      FORECAST: 'weather/forecast',
-      HISTORICAL: 'weather/historical',
+      CURRENT: '/weather/current',
+      FORECAST: '/weather/forecast',
+      HISTORICAL: '/weather/historical',
     },
     
     // Crops
     CROPS: {
-      LIST: 'crops',
-      DETAILS: 'crops/:id',
-      RECOMMENDATIONS: 'crops/recommendations',
-      PLANTING_CALENDAR: 'crops/planting-calendar',
+      LIST: '/crops',
+      DETAILS: '/crops/:id',
+      RECOMMENDATIONS: '/crops/recommendations',
+      PLANTING_CALENDAR: '/crops/planting-calendar',
     },
     
     // Soil Analysis
     SOIL: {
-      ANALYSIS: 'soil/analysis',
-      RECOMMENDATIONS: 'soil/recommendations',
-      HISTORY: 'soil/history',
-      UPLOAD_SAMPLE: 'soil/upload-sample',
+      ANALYSIS: '/soil/analysis',
+      RECOMMENDATIONS: '/soil/recommendations',
+      HISTORY: '/soil/history',
+      UPLOAD_SAMPLE: '/soil/upload-sample',
     },
     
     // Pest Control
     PEST: {
-      IDENTIFICATION: 'pest/identification',
-      TREATMENTS: 'pest/treatments',
-      RISK_ASSESSMENT: 'pest/risk-assessment',
-      REPORTS: 'pest/reports',
+      IDENTIFICATION: '/pest/identification',
+      TREATMENTS: '/pest/treatments',
+      RISK_ASSESSMENT: '/pest/risk-assessment',
+      REPORTS: '/pest/reports',
     },
     
     // Irrigation
     IRRIGATION: {
-      SCHEDULE: 'irrigation/schedule',
-      WATER_USAGE: 'irrigation/water-usage',
-      EFFICIENCY: 'irrigation/efficiency',
-      RECOMMENDATIONS: 'irrigation/recommendations',
+      SCHEDULE: '/irrigation/schedule',
+      WATER_USAGE: '/irrigation/water-usage',
+      EFFICIENCY: '/irrigation/efficiency',
+      RECOMMENDATIONS: '/irrigation/recommendations',
     },
     
     // AI Advisory
     AI: {
-      CHAT: 'ai/chat',
-      RECOMMENDATIONS: 'ai/recommendations',
-      ANALYSIS: 'ai/analysis',
-      INSIGHTS: 'ai/insights',
+      CHAT: '/ai/chat',
+      RECOMMENDATIONS: '/ai/recommendations',
+      ANALYSIS: '/ai/analysis',
+      INSIGHTS: '/ai/insights',
     },
     
     // Education
     EDUCATION: {
-      COURSES: 'education/courses',
-      RESOURCES: 'education/resources',
-      PROGRESS: 'education/progress',
-      CERTIFICATES: 'education/certificates',
+      COURSES: '/education/courses',
+      RESOURCES: '/education/resources',
+      PROGRESS: '/education/progress',
+      CERTIFICATES: '/education/certificates',
     },
     
     // Community
     COMMUNITY: {
-      POSTS: 'community/posts',
-      COMMENTS: 'community/comments',
-      FORUMS: 'community/forums',
-      EVENTS: 'community/events',
-      EXPERTS: 'community/experts',
+      POSTS: '/community/posts',
+      COMMENTS: '/community/comments',
+      FORUMS: '/community/forums',
+      EVENTS: '/community/events',
+      EXPERTS: '/community/experts',
     },
     
     // Dashboard
     DASHBOARD: {
-      STATS: 'dashboard/stats',
-      ALERTS: 'dashboard/alerts',
-      NOTIFICATIONS: 'dashboard/notifications',
+      STATS: '/dashboard/stats',
+      ALERTS: '/dashboard/alerts',
+      NOTIFICATIONS: '/dashboard/notifications',
     },
     
     // File Upload
     UPLOAD: {
-      IMAGE: 'upload/image',
-      DOCUMENT: 'upload/document',
-      BULK: 'upload/bulk',
+      IMAGE: '/upload/image',
+      DOCUMENT: '/upload/document',
+      BULK: '/upload/bulk',
     },
   },
   
