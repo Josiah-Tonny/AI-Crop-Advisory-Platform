@@ -60,6 +60,7 @@
     "react-router-dom": "^7.6.3",
     "recharts": "^3.0.2",
     "rimraf": "^6.1.0",
+    "serverless-http": "^3.2.0",
     "shadcn": "^2.8.0",
     "stripe": "^18.3.0",
     "sucrase": "^3.35.0",
