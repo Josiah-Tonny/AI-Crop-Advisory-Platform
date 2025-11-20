@@ -277,15 +277,30 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// Serve static files from the React app
+// Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
-  // Set static folder
-  const staticPath = path.join(__dirname, '../../dist');
-  app.use(express.static(staticPath));
+  // Set static folder - Vite outputs to 'dist' directory by default
+  const distPath = path.join(__dirname, '../../dist');
+  const assetsPath = path.join(distPath, 'assets');
   
-  // Handle SPA by redirecting all non-API routes to index.html
+  // Serve static files with proper MIME types
+  app.use('/assets', express.static(assetsPath, {
+    maxAge: '1y',
+    etag: true,
+    lastModified: true,
+    immutable: true
+  }));
+  
+  // Serve other static files (like index.html, favicon, etc.)
+  app.use(express.static(distPath, {
+    maxAge: '1h',
+    etag: true,
+    lastModified: true
+  }));
+  
+  // Handle SPA by serving index.html for all non-API routes
   app.get('*', (req, res) => {
-    res.sendFile(path.join(staticPath, 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
@@ -299,9 +314,14 @@ app.use((req, res) => {
     });
   }
   
-  // For non-API routes, let the SPA handle 404s
-  const staticPath = path.join(__dirname, '../../dist');
-  res.sendFile(path.join(staticPath, 'index.html'));
+  // For non-API routes in production, serve index.html and let the SPA handle routing
+  if (process.env.NODE_ENV === 'production') {
+    const distPath = path.join(__dirname, '../../dist');
+    return res.sendFile(path.join(distPath, 'index.html'));
+  }
+  
+  // In development, return a 404 for non-API routes
+  res.status(404).send('Not Found');
 });
 
 // Error handling middleware
