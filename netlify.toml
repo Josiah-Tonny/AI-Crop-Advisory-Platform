@@ -6,7 +6,8 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["mongoose"]
-  timeout = 10
+  [functions.timeout]
+    max = 10  # Maximum execution time in seconds
 
 [[redirects]]
   from = "/api/v1/auth/*"
