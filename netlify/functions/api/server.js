@@ -6,6 +6,12 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 
+// Simple middleware for logging
+app.use((req, res, next) => {
+  console.log(`API Request: ${req.method} ${req.path}`);
+  next();
+});
+
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
@@ -23,6 +29,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Connect to database function
 async function connectToDatabase() {
   if (mongoose.connection.readyState === 1) {
+    console.log('Already connected to MongoDB');
     return;
   }
   
@@ -40,7 +47,9 @@ async function connectToDatabase() {
       }
     }
     
+    console.log('Connecting to MongoDB with URL:', connectionString.substring(0, 50) + '...');
     await mongoose.connect(connectionString);
+    console.log('Connected to MongoDB successfully');
   } catch (error) {
     console.error('Database connection error:', error);
     throw error;
@@ -63,45 +72,44 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Auth routes
+// Simple test route
+app.get('/api/test', (req, res) => {
+  console.log('Test route called');
+  res.status(200).json({
+    status: 'success',
+    message: 'API is working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+  console.log('Health check route called');
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  res.status(200).json({
+    status: 'success',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    database: dbStatus
+  });
+});
+
+// Simple login route
 app.post('/api/v1/auth/login', async (req, res) => {
   try {
-    await connectToDatabase();
+    console.log('Login route called with body:', req.body);
     
-    const { email, password } = req.body;
-    
-    const User = mongoose.models.User || mongoose.model('User', userSchema);
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
-    
-    if (!user || !await user.comparePassword(password)) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Invalid email or password'
-      });
-    }
-    
-    // Update last login
-    user.lastLogin = Date.now();
-    await user.save();
-    
-    // Generate token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    
-    res.json({
+    // Just return a simple response for testing
+    res.status(200).json({
       status: 'success',
+      message: 'Login endpoint is working',
       data: {
-        token,
+        token: 'test-token',
         user: {
-          id: user._id,
-          name: `${user.firstName} ${user.lastName}`,
-          email: user.email,
-          role: user.role,
-          subscriptionTier: user.subscriptionTier,
-          isVerified: user.isVerified
+          id: 'test-user-id',
+          name: 'Test User',
+          email: 'test@example.com',
+          role: 'user'
         }
       }
     });
@@ -114,52 +122,22 @@ app.post('/api/v1/auth/login', async (req, res) => {
   }
 });
 
+// Simple register route
 app.post('/api/v1/auth/register', async (req, res) => {
   try {
-    await connectToDatabase();
+    console.log('Register route called with body:', req.body);
     
-    const { firstName, lastName, email, password } = req.body;
-    
-    const User = mongoose.models.User || mongoose.model('User', userSchema);
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    
-    if (existingUser) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'User already exists with this email'
-      });
-    }
-    
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-    
-    const user = new User({
-      firstName,
-      lastName,
-      email: email.toLowerCase(),
-      password: hashedPassword
-    });
-    
-    await user.save();
-    
-    // Generate token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    
+    // Just return a simple response for testing
     res.status(201).json({
       status: 'success',
+      message: 'Registration endpoint is working',
       data: {
-        token,
+        token: 'test-token',
         user: {
-          id: user._id,
-          name: `${user.firstName} ${user.lastName}`,
-          email: user.email,
-          role: user.role,
-          subscriptionTier: user.subscriptionTier,
-          isVerified: user.isVerified
+          id: 'test-user-id',
+          name: 'Test User',
+          email: 'test@example.com',
+          role: 'user'
         }
       }
     });
@@ -172,12 +150,12 @@ app.post('/api/v1/auth/register', async (req, res) => {
   }
 });
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'Server is running',
-    timestamp: new Date().toISOString()
+// 404 handler
+app.use((req, res) => {
+  console.log('404 - Route not found:', req.originalUrl);
+  res.status(404).json({
+    status: 'fail',
+    message: `Can't find ${req.originalUrl} on this server!`
   });
 });
 
