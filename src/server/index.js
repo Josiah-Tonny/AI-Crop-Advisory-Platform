@@ -279,19 +279,26 @@ app.get('/api/test', (req, res) => {
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  // Path to the client build directory
-  const clientBuildPath = path.join(__dirname, '../../dist');
-  
-  // Log the build path for debugging
+  const clientBuildPath = path.resolve(__dirname, '../../dist');
   console.log('Serving static files from:', clientBuildPath);
   
-  // Serve static files from the Vite build directory
-  app.use(express.static(clientBuildPath));
-  
+  // Serve static files with proper MIME types
+  app.use(express.static(clientBuildPath, {
+    setHeaders: (res, path) => {
+      const mimeType = mime.getType(path);
+      if (mimeType) {
+        res.set('Content-Type', mimeType);
+      }
+    }
+  }));
+
   // Handle SPA - serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    console.log('Serving index.html for route:', req.path);
-    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  app.get('*', (req, res, next) => {
+    if (!req.path.startsWith('/api/')) {
+      console.log('Serving index.html for route:', req.path);
+      return res.sendFile(path.join(clientBuildPath, 'index.html'));
+    }
+    next();
   });
 }
 
