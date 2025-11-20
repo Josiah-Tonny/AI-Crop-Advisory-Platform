@@ -15,25 +15,34 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-// Configure CORS to allow requests from all necessary origins
-app.use(cors({
-  origin: (origin, callback) => {
+// Configure CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow all origins in development
+    if (process.env.NETLIFY_DEV === 'true') {
+      return callback(null, true);
+    }
+    
+    // In production, only allow specific origins
+    const allowedOrigins = [
+      'https://ai-advisory-agri.netlify.app',
+      'https://devserver-master--ai-advisory-agri.netlify.app'
+    ];
+    
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    const allowedOrigins = [
-      'https://ai-advisory-agri.netlify.app',
-      'https://devserver-master--ai-advisory-agri.netlify.app',
-      'http://localhost:5000',
-      'http://localhost:5173'
-    ];
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    // Allow localhost for development
+    if (process.env.NODE_ENV === 'development') {
+      allowedOrigins.push('http://localhost:5000', 'http://localhost:5173');
     }
     
-    return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
@@ -53,12 +62,23 @@ app.use(cors({
     'x-refresh-token'
   ],
   maxAge: 600,
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-}));
+  optionsSuccessStatus: 200
+};
+
+// Enable CORS for all routes
+app.use(cors(corsOptions));
 
 // Handle preflight requests
-app.options('*', cors());
+app.options('*', cors(corsOptions));
+
+// Add CORS headers to all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  next();
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

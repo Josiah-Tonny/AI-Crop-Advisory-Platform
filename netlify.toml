@@ -7,7 +7,7 @@
   node_bundler = "esbuild"
   external_node_modules = ["mongoose"]
   [functions.timeout]
-    max = 10  # Maximum execution time in seconds
+    max = 30  # Increased timeout to 30 seconds
 
 # Environment variables for Netlify Functions
 [build.environment]
@@ -18,7 +18,7 @@
 [context.production.environment]
   NODE_ENV = "production"
   MONGODB_URI = "mongodb+srv://tonnyjosiah0:RoPir9xUMojez9xU@clustercrops.o4jur50.mongodb.net/"
-  JWT_SECRET = "your-jwt-secret-key"  # Make sure to change this in production
+  JWT_SECRET = "jiuytg2uhihopkmiuy78t6r5dfcgyjhiopklmjnyu7trfdcgjiopklmwdjnqit6rf5dcfgdvyubgiwhojnlkd3iu7yjiok"  # Change this to a secure secret
   FRONTEND_URL = "https://ai-advisory-agri.netlify.app"
   
 # Environment variables for development
@@ -30,11 +30,12 @@
   
   [dev.environment]
     NODE_ENV = "development"
+    NETLIFY_DEV = "true"
     MONGODB_URI = "mongodb+srv://tonnyjosiah0:RoPir9xUMojez9xU@clustercrops.o4jur50.mongodb.net/"
-    JWT_SECRET = "your-jwt-secret-key"  # Use a different one for development
+    JWT_SECRET = "jiuytg2uhihopkmiuy78t6r5dfcgyjhiopklmjnyu7trfdcgjiopklmwdjnqit6rf5dcfgdvyubgiwhojnlkd3iu7yjiok"
     FRONTEND_URL = "http://localhost:5173"
 
-# Handle both /api/* and /api/v1/* paths
+# API Proxying
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
@@ -47,14 +48,24 @@
   status = 200
   force = true
 
+# Specific auth endpoint redirects
 [[redirects]]
-  from = "/api/v1/auth/*"
+  from = "/auth/*"
   to = "/.netlify/functions/auth/:splat"
   status = 200
   force = true
+
+# CORS headers for API responses
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"
 
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
