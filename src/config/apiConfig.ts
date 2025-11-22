@@ -1,5 +1,28 @@
-// Import browser-compatible utilities
-import browserUrl from '../utils/browserUrl';
+// Import browser-compatible utilities with error handling
+let browserUrl: {
+  joinUrl: (baseUrl: string, path: string) => string;
+  parseUrlParams?: (url: string) => Record<string, string>;
+  buildUrlWithParams?: (baseUrl: string, params: Record<string, string | number>) => string;
+};
+
+try {
+  // Try to import the browserUrl utility
+  const module = await import('../utils/browserUrl');
+  browserUrl = module.default;
+} catch (e) {
+  // Fallback URL utility functions in case import fails
+  console.warn('Using fallback URL utilities. Some features may be limited.');
+  browserUrl = {
+    joinUrl: (baseUrl: string, path: string): string => {
+      // Remove trailing slash from base URL and leading slash from path
+      const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+      
+      // Join with a single slash
+      return `${cleanBase}/${cleanPath}`;
+    }
+  };
+}
 
 // API Configuration
 export const API_CONFIG = {

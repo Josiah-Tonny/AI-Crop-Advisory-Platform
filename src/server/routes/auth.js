@@ -78,7 +78,6 @@ router.post('/register', validateRegistration, async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
     // Registration error occurred
-    throw error;
   }
 });
 
@@ -146,7 +145,8 @@ router.post('/login', validateLogin, async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
     // Login error occurred
-    throw error;
+    // Fix: Remove throw error to prevent unhandled promise rejection
+    // return is not needed as we already sent the response
   }
 });
 
@@ -176,7 +176,8 @@ router.get('/profile', authenticate, async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
     // Get profile error occurred
-    throw error;
+    // Fix: Remove throw error to prevent unhandled promise rejection
+    // return is not needed as we already sent the response
   }
 });
 
@@ -203,7 +204,8 @@ router.post('/logout', authenticate, async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
     // Logout error occurred
-    throw error;
+    // Fix: Remove throw error to prevent unhandled promise rejection
+    // return is not needed as we already sent the response
   }
 });
 

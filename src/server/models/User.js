@@ -153,24 +153,6 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Generate access token
-userSchema.methods.generateAccessToken = function() {
-  return jwt.sign(
-    { userId: this._id },
-    process.env.ACCESS_TOKEN_SECRET || 'your-access-token-secret',
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '15m' }
-  );
-};
-
-// Generate refresh token
-userSchema.methods.generateRefreshToken = function() {
-  return jwt.sign(
-    { userId: this._id },
-    process.env.REFRESH_TOKEN_SECRET || 'your-refresh-token-secret',
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '7d' }
-  );
-};
-
 // Update last login timestamp
 userSchema.methods.updateLastLogin = async function() {
   this.lastLogin = Date.now();

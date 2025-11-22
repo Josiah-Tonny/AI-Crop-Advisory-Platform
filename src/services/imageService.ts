@@ -2,11 +2,37 @@ import axios from 'axios';
 import { v2 as cloudinary } from 'cloudinary';
 import browserEnv from '../utils/browserEnv';
 
+// Fallback environment utility functions in case import fails
+const fallbackEnvUtils = {
+  getEnv: (key: string, fallback?: string): string => {
+    // @ts-ignore - TypeScript doesn't know about import.meta.env
+    const value = import.meta.env ? import.meta.env[key] : undefined;
+    
+    if (value !== undefined && value !== '') {
+      return value;
+    }
+    
+    // Check process.env as fallback (for testing environments)
+    // @ts-ignore - TypeScript doesn't know about process.env
+    const processValue = typeof process !== 'undefined' && process.env ? process.env[key] : undefined;
+    
+    if (processValue !== undefined && processValue !== '') {
+      return processValue;
+    }
+    
+    // Return fallback or empty string
+    return fallback || '';
+  }
+};
+
+// Use fallback if browserEnv import fails
+const envUtils = browserEnv || fallbackEnvUtils;
+
 // Initialize Cloudinary with credentials from environment variables
 cloudinary.config({
-  cloud_name: browserEnv.getEnv('VITE_CLOUDINARY_CLOUD_NAME', 'dl5rwjjol'),
-  api_key: browserEnv.getEnv('VITE_CLOUDINARY_API_KEY', '739594788726412'),
-  api_secret: browserEnv.getEnv('VITE_CLOUDINARY_API_SECRET', 'nxznHMRstCTrksqgZFhrR0d6Rjc'),
+  cloud_name: envUtils.getEnv('VITE_CLOUDINARY_CLOUD_NAME', 'dl5rwjjol'),
+  api_key: envUtils.getEnv('VITE_CLOUDINARY_API_KEY', '739594788726412'),
+  api_secret: envUtils.getEnv('VITE_CLOUDINARY_API_SECRET', 'nxznHMRstCTrksqgZFhrR0d6Rjc'),
   secure: true
 });
 
