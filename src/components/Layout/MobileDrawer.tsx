@@ -14,10 +14,12 @@ import {
   HelpCircle,
   X,
   CreditCard,
-  Sparkles
+  Sparkles,
+  LogIn
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) => {
   const touchStartX = useRef<number>(0);
   const touchCurrentX = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
+  const { user } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -47,11 +50,18 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) => {
     { name: 'Community', href: '/community', icon: Users },
   ];
 
-  const secondaryNavigation = [
-    { name: 'Subscription', href: '/payment', icon: CreditCard },
-    { name: 'Settings', href: '/settings', icon: Settings },
-    { name: 'Help', href: '/help', icon: HelpCircle },
-  ];
+  const secondaryNavigation = user
+    ? [
+        { name: 'Subscription', href: '/payment', icon: CreditCard },
+        { name: 'Settings', href: '/settings', icon: Settings },
+        { name: 'Help', href: '/help', icon: HelpCircle },
+      ]
+    : [
+        { name: 'Subscription', href: '/payment', icon: CreditCard },
+        { name: 'Settings', href: '/settings', icon: Settings },
+        { name: 'Help', href: '/help', icon: HelpCircle },
+        { name: 'Login', href: '/login', icon: LogIn },
+      ];
 
   // Close drawer when route changes
   useEffect(() => {

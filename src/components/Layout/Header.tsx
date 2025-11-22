@@ -165,49 +165,67 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
           {/* User info and actions */}
           <div className="flex items-center gap-x-2">
-            {/* User name - hidden on small screens */}
-            <div className="hidden md:block">
-              <span className="text-sm text-gray-700 font-medium transition-colors bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent">
-                {user?.firstName} {user?.lastName}
-              </span>
-              <div className="flex items-center gap-1 mt-0.5">
-                <Sparkles className="h-3 w-3 text-yellow-500 animate-pulse" />
-                <span className="text-xs text-gray-500 font-medium">Premium User</span>
-              </div>
-            </div>
+            {user ? (
+              <>
+                {/* User name - hidden on small screens */}
+                <div className="hidden md:block">
+                  <span className="text-sm text-gray-700 font-medium transition-colors bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent">
+                    {user?.firstName} {user?.lastName}
+                  </span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Sparkles className="h-3 w-3 text-yellow-500 animate-pulse" />
+                    <span className="text-xs text-gray-500 font-medium">Premium User</span>
+                  </div>
+                </div>
 
-            {/* Profile button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "touch-target transition-all duration-300",
-                "hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:scale-105 hover:shadow-md",
-                "group overflow-hidden relative"
-              )}
-              title="Profile"
-              aria-label="View profile"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              <User className="h-6 w-6 relative z-10" />
-            </Button>
+                {/* Profile button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "touch-target transition-all duration-300",
+                    "hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:scale-105 hover:shadow-md",
+                    "group overflow-hidden relative"
+                  )}
+                  title="Profile"
+                  aria-label="View profile"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  <User className="h-6 w-6 relative z-10" />
+                </Button>
 
-            {/* Logout button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className={cn(
-                "touch-target transition-all duration-300",
-                "hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-600 hover:scale-105 hover:shadow-md",
-                "group overflow-hidden relative"
-              )}
-              title="Logout"
-              aria-label="Logout"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-pink-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              <LogOut className="h-6 w-6 relative z-10" />
-            </Button>
+                {/* Logout button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  className={cn(
+                    "touch-target transition-all duration-300",
+                    "hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-600 hover:scale-105 hover:shadow-md",
+                    "group overflow-hidden relative"
+                  )}
+                  title="Logout"
+                  aria-label="Logout"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-pink-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  <LogOut className="h-6 w-6 relative z-10" />
+                </Button>
+              </>
+            ) : (
+              /* Login button for unauthenticated users */
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/login')}
+                className={cn(
+                  "touch-target transition-all duration-300",
+                  "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:scale-105 hover:shadow-md",
+                  "group overflow-hidden relative"
+                )}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                <span className="relative z-10 font-medium">Login</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>

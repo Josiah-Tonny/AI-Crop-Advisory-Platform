@@ -1,5 +1,5 @@
 import express from 'express';
-import Discussion from '../models/Discussion.ts';
+import Discussion from '../models/Discussion.js';
 import authenticate from '../middleware/auth.js';
 import { validateDiscussion } from '../middleware/validation.js';
 

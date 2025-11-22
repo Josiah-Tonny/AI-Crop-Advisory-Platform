@@ -170,7 +170,7 @@ class AuthService {
       const axiosError = error as AxiosError;
       
       // Check if it's a network error
-      if (axiosError.code === 'ERR_NETWORK' && import.meta.env.DEV) {
+      if (axiosError.code === 'ERR_NETWORK' || (axiosError as any).request) {
         // Network error handling
         return {
           success: false,

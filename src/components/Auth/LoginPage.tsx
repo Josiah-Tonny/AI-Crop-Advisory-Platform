@@ -14,7 +14,25 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  // Add error handling for useAuth hook
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.error('Auth context error:', error);
+    // Return a simple error message if context is not available
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Authentication Error</h1>
+          <p className="text-gray-600 mb-4">Unable to initialize authentication system.</p>
+          <p className="text-sm text-gray-500">Please refresh the page or contact support.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const { login } = authContext;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,10 +49,12 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     
     try {
-      await login(formData.email, formData.password);
-      const redirectTo = location.state?.from?.pathname || '/dashboard';
-      navigate(redirectTo);
-      toast.success('Successfully logged in!');
+      const success = await login(formData.email, formData.password);
+      if (success) {
+        const redirectTo = location.state?.from?.pathname || '/dashboard';
+        navigate(redirectTo);
+        toast.success('Successfully logged in!');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to log in. Please try again.');
     } finally {

@@ -16,12 +16,16 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
+  }
+  // Add a check for null context as well
+  if (context === null) {
+    throw new Error('useAuth must be used within an AuthProvider - context is null');
   }
   return context;
 };

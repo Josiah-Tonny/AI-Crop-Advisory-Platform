@@ -322,7 +322,10 @@ const server = app.listen(port, '0.0.0.0', () => {
   logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
   // Try to connect to MongoDB after server starts
-  connectToDatabase();
+  connectToDatabase().catch(error => {
+    logger.error('❌ MongoDB connection failed:', error.message);
+    logger.error('Server will continue running but database features will be unavailable.');
+  });
 });
 
 async function connectToDatabase() {
@@ -330,7 +333,8 @@ async function connectToDatabase() {
   
   if (!MONGODB_URL) {
     logger.error('❌ MONGODB_URL not found. Server cannot start without database connection.');
-    process.exit(1);
+    // Don't exit the process, just log the error
+    throw new Error('MONGODB_URL not found');
   }
   
   try {
@@ -361,7 +365,8 @@ async function connectToDatabase() {
     
   } catch (error) {
     logger.error('❌ MongoDB connection failed:', error.message);
-    logger.error('Server cannot start without database connection.');
-    process.exit(1);
+    logger.error('Database features will be unavailable until connection is restored.');
+    // Don't exit the process, just throw the error to be caught above
+    throw error;
   }
 }
