@@ -3,14 +3,8 @@ import browserUrl from '../utils/browserUrl';
 
 // API Configuration
 export const API_CONFIG = {
-  // Base URLs - Use localhost in development, Netlify functions in production
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 
-    (import.meta.env.PROD 
-      ? 'https://ai-advisory-agri.netlify.app/.netlify/functions'  // Production URL with Netlify functions
-      : 'http://localhost:5000'),  // Local development
-      
-  // API base path
-  API_PREFIX: '/api',
+  // Base URLs - Use port 5000 to match backend server
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   
   // Weather API
   WEATHER: {
@@ -44,10 +38,10 @@ export const API_CONFIG = {
   ENDPOINTS: {
     // Authentication
     AUTH: {
-      LOGIN: '/auth/login',
-      REGISTER: '/auth/register',
-      LOGOUT: '/auth/logout',
-      PROFILE: '/auth/me',
+      LOGIN: '/v1/auth/login',
+      REGISTER: '/v1/auth/register',
+      LOGOUT: '/v1/auth/logout',
+      PROFILE: '/v1/auth/profile',
     },
     
     // Weather
