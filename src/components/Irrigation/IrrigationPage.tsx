@@ -836,8 +836,7 @@ const IrrigationPage: React.FC = () => {
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
               onClick={() => {
                 // This would normally call a function to download the schedule
-                // For now, we'll just log it
-                console.log('Download schedule functionality would go here');
+                // TODO: implement download schedule functionality
               }}
             >
               <Calendar className="w-4 h-4 mr-2" />
@@ -851,8 +850,7 @@ const IrrigationPage: React.FC = () => {
               className="border-green-600 text-green-600 hover:bg-green-50"
               onClick={() => {
                 // This would normally call a function to generate a water usage report
-                // For now, we'll just log it
-                console.log('Water usage report functionality would go here');
+                // TODO: implement water usage report functionality
               }}
             >
               <TrendingUp className="w-4 h-4 mr-2" />

@@ -19,12 +19,7 @@ const PayPalPayment: React.FC<PayPalPaymentProps> = ({ planId }) => {
     try {
       const response = await axios.post(
         '/api/payments/paypal/create-subscription',
-        { planId },
-        {
-          headers: {
-            'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY,
-          },
-        }
+        { planId }
       );
 
       if (response.data.success && response.data.approvalUrl) {

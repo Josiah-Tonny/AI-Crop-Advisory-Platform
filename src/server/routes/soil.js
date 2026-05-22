@@ -4,8 +4,12 @@ import { calculateSoilCapacity, estimateSoilMoisture } from '../services/soilWat
 import { fetchCurrentWeather } from '../services/weatherFetcher.js';
 
 // Get external API keys
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || 'c6fbd54581688fcc0d5509271b63656c';
-const AIMLAPI_AI_API_KEY = process.env.AIMLAPI_AI_API_KEY || process.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e';
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const AIMLAPI_AI_API_KEY = process.env.AIMLAPI_AI_API_KEY;
+
+if (!OPENWEATHER_API_KEY || !AIMLAPI_AI_API_KEY) {
+  throw new Error('OPENWEATHER_API_KEY and AIMLAPI_AI_API_KEY must be configured in environment variables.');
+}
 
 // Create axios instance for external AI API
 const aiClient = axios.create({

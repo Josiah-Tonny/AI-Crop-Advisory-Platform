@@ -4,8 +4,12 @@ import axios from 'axios';
 const router = express.Router();
 
 // Get external API keys
-const AIMLAPI_AI_API_KEY = process.env.AIMLAPI_AI_API_KEY || process.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e';
+const AIMLAPI_AI_API_KEY = process.env.AIMLAPI_AI_API_KEY;
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+
+if (!AIMLAPI_AI_API_KEY || !OPENWEATHER_API_KEY) {
+  throw new Error('AIMLAPI_AI_API_KEY and OPENWEATHER_API_KEY must be configured in environment variables.');
+}
 
 // Create axios instance for external AI API
 const aiClient = axios.create({

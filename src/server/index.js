@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import mime from 'mime';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -26,7 +27,18 @@ const app = express();
 // Middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: false
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:5173'],
+      fontSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  } : false
 }));
 
 // Configure CORS
@@ -65,6 +77,19 @@ app.get('/api/health', (req, res) => {
 // Import auth routes
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
+import authenticate from './middleware/auth.js';
+
+const SERVICE_API_KEY = process.env.AIMLAPI_AI_API_KEY || process.env.SERVICE_API_KEY;
+const requireAuthOrServiceKey = (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+
+  if (apiKey && SERVICE_API_KEY && apiKey === SERVICE_API_KEY) {
+    req.isApiAuthenticated = true;
+    return next();
+  }
+
+  return authenticate(req, res, next);
+};
 
 // Use auth routes
 app.use('/api/v1/auth', authRoutes);
@@ -74,158 +99,44 @@ app.use('/api/v1/users', userRoutes);
 import discussionRoutes from './routes/discussions.js';
 logger.info('Loaded discussion routes');
 
-// Create auth middleware for discussion endpoints
-app.use('/api/discussions', (req, res, next) => {
-  // First check for API key in header
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey && (apiKey === process.env.AIMLAPI_AI_API_KEY || apiKey === process.env.VITE_AIMLAPI_AI_API_KEY)) {
-    // API key is valid, skip token check
-    req.isApiAuthenticated = true;
-    return next();
-  }
-  
-  // If no API key or invalid key, proceed with normal auth
-  import('./middleware/auth.js').then(authModule => {
-    // Use default export for ES module compatibility
-    const authMiddleware = authModule.default;
-    authMiddleware(req, res, next);
-  }).catch(err => {
-    console.error('Error loading auth middleware:', err);
-    // Error handling for loading auth middleware
-    throw err;
-  });
-});
-
-// Use discussion routes
-app.use('/api/discussions', discussionRoutes);
+// Use discussion routes with token or backend service key auth
+app.use('/api/discussions', requireAuthOrServiceKey, discussionRoutes);
 
 // Import pest routes
 import pestRoutes from './routes/pest.js';
 logger.info('Loaded pest routes');
-console.log('Routes in pestRoutes:', Object.keys(pestRoutes));
 
-// Create alternative auth middleware that accepts API keys for pest endpoints
-app.use('/api/pest', (req, res, next) => {
-  // First check for API key in header
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey && (apiKey === process.env.AIMLAPI_AI_API_KEY || apiKey === process.env.VITE_AIMLAPI_AI_API_KEY)) {
-    // API key is valid, skip token check
-    req.isApiAuthenticated = true;
-    return next();
-  }
-  
-  // If no API key or invalid key, proceed with normal auth
-  import('./middleware/auth.js').then(authModule => {
-    // Use default export for ES module compatibility
-    const authMiddleware = authModule.default;
-    authMiddleware(req, res, next);
-  }).catch(err => {
-    console.error('Error loading auth middleware:', err);
-    // Error handling for loading auth middleware
-    throw err;
-  });
-});
-
-// Use pest routes with relaxed auth
-app.use('/api/pest', pestRoutes);
+// Use pest routes with token or backend service key auth
+app.use('/api/pest', requireAuthOrServiceKey, pestRoutes);
 
 // Add direct route handlers as well for debugging
 app.get('/api/pest-test/common-pests', (req, res) => {
-  console.log('Pest test route called');
   res.json({ success: true, message: 'Direct pest route working' });
 });
 
 // Import and configure irrigation routes
 import irrigationRoutes from './routes/irrigation.js';
 logger.info('Loaded irrigation routes');
-
-// Create auth middleware for irrigation endpoints (same pattern as pest)
-app.use('/api/irrigation', (req, res, next) => {
-  // First check for API key in header
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey && (apiKey === process.env.AIMLAPI_AI_API_KEY || apiKey === process.env.VITE_AIMLAPI_AI_API_KEY)) {
-    // API key is valid, skip token check
-    req.isApiAuthenticated = true;
-    return next();
-  }
-  
-  return res.status(401).json({ 
-    success: false, 
-    message: 'Invalid or missing API key' 
-  });
-});
-
-// Use irrigation routes
-app.use('/api/irrigation', irrigationRoutes);
+app.use('/api/irrigation', requireAuthOrServiceKey, irrigationRoutes);
 
 // Import and configure crop routes
 import cropRoutes from './routes/crops.js';
 logger.info('Loaded crop routes');
-
-// Create auth middleware for crop endpoints (same pattern as pest)
-app.use('/api/crops', (req, res, next) => {
-  // First check for API key in header
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey && (apiKey === process.env.AIMLAPI_AI_API_KEY || apiKey === process.env.VITE_AIMLAPI_AI_API_KEY)) {
-    // API key is valid, skip token check
-    req.isApiAuthenticated = true;
-    return next();
-  }
-  
-  return res.status(401).json({ 
-    success: false, 
-    message: 'Invalid or missing API key' 
-  });
-});
-
-// Use crop routes
-app.use('/api/crops', cropRoutes);
+app.use('/api/crops', requireAuthOrServiceKey, cropRoutes);
 
 // Import and configure soil routes
 import soilRoutes from './routes/soil.js';
 logger.info('Loaded soil routes');
-
-// Create auth middleware for soil endpoints (same pattern as pest)
-app.use('/api/soil', (req, res, next) => {
-  // First check for API key in header
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey && (apiKey === process.env.AIMLAPI_AI_API_KEY || apiKey === process.env.VITE_AIMLAPI_AI_API_KEY)) {
-    // API key is valid, skip token check
-    req.isApiAuthenticated = true;
-    return next();
-  }
-  
-  return res.status(401).json({ 
-    success: false, 
-    message: 'Invalid or missing API key' 
-  });
-});
-
-// Use soil routes
-app.use('/api/soil', soilRoutes);
+app.use('/api/soil', requireAuthOrServiceKey, soilRoutes);
 
 // Import and configure education routes
 import educationRoutes from './routes/education.js';
 logger.info('Loaded education routes');
+app.use('/api/education', requireAuthOrServiceKey, educationRoutes);
 
-// Create auth middleware for education endpoints (same pattern as pest)
-app.use('/api/education', (req, res, next) => {
-  // First check for API key in header
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey && (apiKey === process.env.AIMLAPI_AI_API_KEY || apiKey === process.env.VITE_AIMLAPI_AI_API_KEY)) {
-    // API key is valid, skip token check
-    req.isApiAuthenticated = true;
-    return next();
-  }
-  
-  return res.status(401).json({ 
-    success: false, 
-    message: 'Invalid or missing API key' 
-  });
-});
-
-// Use education routes
-app.use('/api/education', educationRoutes);
+import externalRoutes from './routes/external.js';
+logger.info('Loaded external proxy routes');
+app.use('/api/external', requireAuthOrServiceKey, externalRoutes);
 
 // Import and configure payment routes
 import paymentRoutes from './routes/payments.js';
@@ -237,23 +148,13 @@ app.use('/api/payments', (req, res, next) => {
   if (req.path === '/plans' && req.method === 'GET') {
     return next();
   }
-  
+
   // Allow webhooks without auth (they verify with signatures)
   if (req.path.includes('/webhook') || req.path.includes('/callback')) {
     return next();
   }
-  
-  // For all other payment endpoints, require API key
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey && (apiKey === process.env.AIMLAPI_AI_API_KEY || apiKey === process.env.VITE_AIMLAPI_AI_API_KEY)) {
-    req.isApiAuthenticated = true;
-    return next();
-  }
-  
-  return res.status(401).json({ 
-    success: false, 
-    message: 'Authentication required' 
-  });
+
+  return requireAuthOrServiceKey(req, res, next);
 });
 
 app.use('/api/payments', paymentRoutes);
@@ -264,7 +165,7 @@ app.get('/api/test', (req, res) => {
     success: true, 
     message: 'API test route working',
     envVariables: {
-      AIMLAPI_AI_API_KEY: (process.env.AIMLAPI_AI_API_KEY || process.env.VITE_AIMLAPI_AI_API_KEY) ? 'Present (hidden)' : 'Missing',
+      AIMLAPI_AI_API_KEY: process.env.AIMLAPI_AI_API_KEY ? 'Present (hidden)' : 'Missing',
       OPENWEATHER_API_KEY: process.env.OPENWEATHER_API_KEY ? 'Present (hidden)' : 'Missing'
     }
   });
@@ -273,7 +174,6 @@ app.get('/api/test', (req, res) => {
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.resolve(__dirname, '../../dist');
-  console.log('Serving static files from:', clientBuildPath);
   
   // Serve static files with proper MIME types
   app.use(express.static(clientBuildPath, {
@@ -288,7 +188,6 @@ if (process.env.NODE_ENV === 'production') {
   // Handle SPA - serve index.html for all non-API routes
   app.get('*', (req, res, next) => {
     if (!req.path.startsWith('/api/')) {
-      console.log('Serving index.html for route:', req.path);
       return res.sendFile(path.join(clientBuildPath, 'index.html'));
     }
     next();

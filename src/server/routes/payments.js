@@ -179,8 +179,6 @@ router.post('/mpesa/callback', express.json(), async (req, res) => {
     // Process M-Pesa callback
     // Extract transaction details and update subscription status
 
-    console.log('M-Pesa callback received:', Body);
-
     res.json({ ResultCode: 0, ResultDesc: 'Success' });
   } catch (error) {
     console.error('M-Pesa callback error:', error);

@@ -4,10 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.DEV 
     ? '/api'  // Use proxy in development
     : '/.netlify/functions');  // Use Netlify Functions in production
-const AGRO_API_KEY = import.meta.env.VITE_AGROMONITORING_API_KEY || '4c9701473de7427083be0ec5b95d9efa';
-const LOCATION_API_KEY = import.meta.env.VITE_LOCATIONIQ_API_KEY || 'pk.9598243e10adf82a5bf5b4ec37f91ee6';
-const AGRO_BASE_URL = 'http://api.agromonitoring.com/agro/1.0';
-const LOCATION_BASE_URL = 'https://us1.locationiq.com/v1';
+// External service requests are proxied through the backend to avoid exposing secrets.
 
 // Configure axios instance
 const apiClient = axios.create({
@@ -21,28 +18,18 @@ const apiClient = axios.create({
 export const weatherService = {
   getCurrentWeather: async (lat: number, lon: number) => {
     try {
-      const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY || 'c6fbd54581688fcc0d5509271b63656c';
-      if (!apiKey) {
-        throw new Error('Weather API key not found. Please check your environment configuration.');
-      }
-
-      const response = await axios.get('https://api.openweathermap.org/data/2.5/weather', {
+      const response = await axios.get('/api/external/weather/current', {
         params: {
           lat,
-          lon,
-          appid: apiKey,
-          units: 'metric'
+          lon
         }
       });
       
-      const data = response.data;
-      
-      // Validate essential data fields
-      if (!data.main || !data.weather || !Array.isArray(data.weather) || data.weather.length === 0) {
-        throw new Error('Invalid weather data received from API');
+      if (!response.data || !response.data.main || !Array.isArray(response.data.weather) || response.data.weather.length === 0) {
+        throw new Error('Invalid weather data received from server proxy');
       }
 
-      return data;
+      return response.data;
     } catch (error) {
       // Error handling for weather API
       if (axios.isAxiosError(error)) {
@@ -63,16 +50,9 @@ export const weatherService = {
 
   searchLocation: async (locationName: string) => {
     try {
-      const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY || 'c6fbd54581688fcc0d5509271b63656c';
-      if (!apiKey) {
-        throw new Error('Weather API key not found');
-      }
-
-      const response = await axios.get('https://api.openweathermap.org/geo/1.0/direct', {
+      const response = await axios.get('/api/external/geo/search', {
         params: {
-          q: locationName,
-          limit: 5,
-          appid: apiKey
+          q: locationName
         }
       });
       
@@ -105,17 +85,10 @@ export const weatherService = {
   },
 
   getForecast: async (lat: number, lon: number) => {
-    const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY || 'c6fbd54581688fcc0d5509271b63656c';
-    if (!apiKey) {
-      throw new Error('Weather API key not found');
-    }
-
-    const response = await axios.get('https://api.openweathermap.org/data/2.5/forecast', {
+    const response = await axios.get('/api/external/weather/forecast', {
       params: {
         lat,
-        lon,
-        appid: apiKey,
-        units: 'metric'
+        lon
       }
     });
     
@@ -129,102 +102,53 @@ export const weatherService = {
   },
 
   getAirQuality: async (lat: number, lon: number) => {
-    const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY || 'c6fbd54581688fcc0d5509271b63656c';
-    if (!apiKey) {
-      throw new Error('Weather API key not found');
-    }
-
-    const response = await axios.get('https://api.openweathermap.org/data/2.5/air_pollution', {
+    const response = await axios.get('/api/external/weather/air-quality', {
       params: {
         lat,
-        lon,
-        appid: apiKey
+        lon
       }
     });
     
-    const data = response.data;
-    return data;
+    return response.data;
   }
 };
 
 // Agro Monitoring Service
 export const agroService = {
   getFieldInfo: async (fieldId: string) => {
-    const response = await axios.get(
-      `${AGRO_BASE_URL}/fields/${fieldId}?appid=${AGRO_API_KEY}`
-    );
+    const response = await axios.get(`/api/external/agromonitoring/fields/${fieldId}`);
     return response.data;
   },
 
   getSoilData: async (lat: number, lon: number) => {
-    // First get the field ID by creating a polygon
-    const polygon = await createFieldPolygon(lat, lon);
-    const fieldId = polygon.id;
-    
-    // Get soil data for the field
-    const response = await axios.get(
-      `${AGRO_BASE_URL}/soil?polyid=${fieldId}&appid=${AGRO_API_KEY}`
-    );
-    
-    // Clean up the temporary field
-    await deleteField(fieldId);
-    
+    const response = await axios.get('/api/external/agromonitoring/soil', {
+      params: {
+        lat,
+        lon
+      }
+    });
     return response.data;
   }
 };
 
-// Helper function to create a temporary field for soil data
-async function createFieldPolygon(lat: number, lon: number) {
-  const polygon = {
-    name: 'temp_soil_analysis',
-    geo_json: {
-      type: 'Feature',
-      properties: {},
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [lon - 0.01, lat - 0.01],
-          [lon + 0.01, lat - 0.01],
-          [lon + 0.01, lat + 0.01],
-          [lon - 0.01, lat + 0.01],
-          [lon - 0.01, lat - 0.01]
-        ]]
-      }
-    }
-  };
-
-  const response = await axios.post(
-    `${AGRO_BASE_URL}/fields?appid=${AGRO_API_KEY}`,
-    polygon
-  );
-  
-  return response.data;
-}
-
-// Helper function to delete temporary field
-async function deleteField(fieldId: string) {
-  try {
-    await axios.delete(
-      `${AGRO_BASE_URL}/fields/${fieldId}?appid=${AGRO_API_KEY}`
-    );
-  } catch {
-    // Continue execution even if deleting temporary field fails
-  }
-}
-
 // Location Service
 export const locationService = {
   reverseGeocode: async (lat: number, lon: number) => {
-    const response = await axios.get(
-      `${LOCATION_BASE_URL}/reverse.php?key=${LOCATION_API_KEY}&lat=${lat}&lon=${lon}&format=json`
-    );
+    const response = await axios.get('/api/external/geo/reverse', {
+      params: {
+        lat,
+        lon
+      }
+    });
     return response.data;
   },
 
   forwardGeocode: async (query: string) => {
-    const response = await axios.get(
-      `${LOCATION_BASE_URL}/search.php?key=${LOCATION_API_KEY}&q=${encodeURIComponent(query)}&format=json`
-    );
+    const response = await axios.get('/api/external/geo/search', {
+      params: {
+        q: query
+      }
+    });
     return response.data;
   }
 };
@@ -469,33 +393,18 @@ export const soilService = {
 
   // Fix the getSoilHistory method to use the correct endpoint
   getSoilHistory: async () => {
-    // Call the correct endpoint with proper authentication
-    const response = await apiClient.get('/soil/analysis/history', {
-      headers: {
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e'
-      }
-    });
+    const response = await apiClient.get('/soil/analysis/history');
     return response.data;
   },
 
   // Add other missing methods
   uploadSample: async (sampleData: Record<string, unknown>) => {
-    // Call real API endpoint for soil sample upload
-    const response = await apiClient.post('/soil/samples', sampleData, {
-      headers: {
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e'
-      }
-    });
+    const response = await apiClient.post('/soil/samples', sampleData);
     return response.data;
   },
 
   getRecommendations: async (soilData: Record<string, unknown>) => {
-    // Call real API endpoint for soil recommendations
-    const response = await apiClient.post('/soil/recommendations', soilData, {
-      headers: {
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e'
-      }
-    });
+    const response = await apiClient.post('/soil/recommendations', soilData);
     return response.data;
   }
 };
@@ -513,10 +422,6 @@ export const irrigationService = {
         lat: location.lat,
         lon: location.lon,
         cropType: cropType
-      },
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e'
       },
       timeout: 30000
     });
@@ -539,10 +444,6 @@ export const irrigationService = {
         lat: location.lat,
         lon: location.lon
       },
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
-      },
       timeout: 30000
     });
     
@@ -550,19 +451,14 @@ export const irrigationService = {
   },
 
   getEvapotranspiration: async (location: { lat: number; lon: number }) => {
-    // Use the correct endpoint for Netlify Functions
     const endpoint = import.meta.env.DEV 
       ? `${API_BASE_URL}/irrigation/evapotranspiration`
-      : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
+      : `${API_BASE_URL}/health`;
     
     const response = await axios.get(endpoint, {
       params: {
         lat: location.lat,
         lon: location.lon
-      },
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
       },
       timeout: 30000
     });
@@ -584,9 +480,6 @@ export const pestService = {
         lat: location.lat,
         lon: location.lon,
         cropType: cropType
-      },
-      headers: {
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
       }
     });
     return response.data;
@@ -599,10 +492,7 @@ export const pestService = {
       : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
     
     const response = await axios.get(endpoint, {
-      params: { cropType },
-      headers: {
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
-      }
+      params: { cropType }
     });
     return response.data;
   },
@@ -613,11 +503,7 @@ export const pestService = {
       ? `${API_BASE_URL}/pest/details/${pestId}`
       : `${API_BASE_URL}/health`;  // Use health function as placeholder for now
     
-    const response = await axios.get(endpoint, {
-      headers: {
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e'
-      }
-    });
+    const response = await axios.get(endpoint);
     return response.data;
   }
 };

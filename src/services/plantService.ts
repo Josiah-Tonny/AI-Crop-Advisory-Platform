@@ -1,25 +1,21 @@
 import axios from 'axios';
 
-// API Keys from environment variables
-const TREFLE_API_KEY = import.meta.env.VITE_TREFLE_API_KEY || 'usr-FI3Q4yNp4sIfzzhtlYu20zBSvjEhKaN5r67aihtHrzQ';
-const PLANT_ID_API_KEY = import.meta.env.VITE_PLANT_ID_API_KEY;
+// The frontend should never persist API keys. These endpoints are proxied through the backend.
 
 // Create API clients
 const trefleClient = axios.create({
-  baseURL: 'http://localhost:5000/api', // Use our backend proxy instead of Trefle directly
+  baseURL: 'http://localhost:5000/api', // Use backend proxy instead of Trefle directly
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
-    'x-api-key': TREFLE_API_KEY // Add API key for authentication
+    'Content-Type': 'application/json'
   }
 });
 
 const plantIdClient = axios.create({
-  baseURL: 'https://plant.id/api/v3',
+  baseURL: '/api/external',
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
-    'Api-Key': PLANT_ID_API_KEY
+    'Content-Type': 'application/json'
   }
 });
 
@@ -116,8 +112,7 @@ export const plantService = {
         params: {
           q: query,
           page,
-          per_page: perPage,
-          token: TREFLE_API_KEY
+          per_page: perPage
         }
       });
       
@@ -132,11 +127,7 @@ export const plantService = {
    */
   getPlantById: async (id: number): Promise<Plant> => {
     try {
-      const response = await trefleClient.get(`/plants/${id}`, {
-        params: {
-          token: TREFLE_API_KEY
-        }
-      });
+      const response = await trefleClient.get(`/plants/${id}`);
       
       return response.data.data;
     } catch (error) {
@@ -162,8 +153,7 @@ export const plantService = {
       // Use our backend proxy endpoint to avoid CORS issues
       const response = await trefleClient.get(`/crops/trefle/plants`, {
         params: {
-          ...params,
-          token: TREFLE_API_KEY
+          ...params
         }
       });
       
@@ -184,8 +174,7 @@ export const plantService = {
             family_name: family
           },
           page,
-          per_page: perPage,
-          token: TREFLE_API_KEY
+          per_page: perPage
         }
       });
       

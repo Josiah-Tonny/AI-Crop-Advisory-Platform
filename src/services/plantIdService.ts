@@ -103,15 +103,13 @@ interface PlantIdentificationResult {
 
 class PlantIdService {
   private client: AxiosInstance;
-  private apiKey: string;
 
   constructor() {
-    this.apiKey = import.meta.env.VITE_PLANT_ID_API_KEY;
     this.client = axios.create({
-      baseURL: 'https://plant.id/api/v3',
+      baseURL: '/api/external',
+      timeout: 30000,
       headers: {
-        'Content-Type': 'application/json',
-        'Api-Key': this.apiKey
+        'Content-Type': 'application/json'
       }
     });
   }
@@ -127,7 +125,7 @@ class PlantIdService {
         plant_details: ["common_names", "taxonomy", "url", "description", "wiki_description", "watering", "images"]
       };
 
-      const response = await this.client.post<PlantIdResponse>('/identification', requestData);
+      const response = await this.client.post<PlantIdResponse>('/plant-id/identify', requestData);
 
       return response.data.suggestions.map(suggestion => ({
         plantName: suggestion.name,
@@ -153,7 +151,7 @@ class PlantIdService {
         modifiers: ["disease_similar_images"]
       };
 
-      const response = await this.client.post<PlantIdResponse>('/health_assessment', requestData);
+      const response = await this.client.post<PlantIdResponse>('/plant-id/health-assessment', requestData);
 
       return response.data.suggestions.map(suggestion => ({
         disease: suggestion.name,

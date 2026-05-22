@@ -45,11 +45,6 @@ const MpesaPayment: React.FC<MpesaPaymentProps> = ({ planId }) => {
         {
           phoneNumber: formattedPhone,
           planId
-        },
-        {
-          headers: {
-            'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY,
-          },
         }
       );
 

@@ -5,18 +5,15 @@ import plantService from './plantService';
 import imageService from './imageService';
 import educationService from './educationService';
 
-// Get API key from environment variable (no fallback for security)
-const AIMLAPI_AI_API_KEY = import.meta.env.VITE_AIMLAPI_AI_API_KEY || 'dcc847936b14463cac35a898489fb72e';
-
 // Backend URL for any server-side APIs
+// Authentication should be handled by server-side session cookies or JWTs, not by exposing secrets in the frontend.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 // Create axios instance for AI API service
 const aimlClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
-    'x-api-key': AIMLAPI_AI_API_KEY // Make sure the header name matches exactly what the server expects
+    'Content-Type': 'application/json'
   },
   timeout: 30000 // 30 seconds
 });
@@ -492,10 +489,6 @@ export const aimlService = {
       symptoms: params.symptoms,
       imageUrl: params.imageUrl,
       enhancedData: enhancedData
-    }, {
-      headers: {
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY // Add API key for authentication
-      }
     });
     
     // Find relevant educational videos about detected pests
@@ -593,10 +586,6 @@ export const aimlService = {
       currentMoisture: params.currentMoisture,
       weatherData: weatherData,
       soilCharacteristics: soilCharacteristics
-    }, {
-      headers: {
-        'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY // Add API key for authentication
-      }
     });
     
     // Find relevant educational videos about irrigation techniques
@@ -835,10 +824,7 @@ export const aimlService = {
       const apiPromise = (async () => {
         try {
           const apiResponse = await aimlClient.get('/education/content', {
-            params: params,
-            headers: {
-              'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY // Add API key for authentication
-            }
+            params: params
           });
           return apiResponse.data;
         } catch (_apiError) {

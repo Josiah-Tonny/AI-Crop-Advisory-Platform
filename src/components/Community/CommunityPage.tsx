@@ -144,18 +144,16 @@ const CommunityPage: React.FC = () => {
 
   // Debugging - log when component mounts
   useEffect(() => {
-    console.log('CommunityPage mounted');
+    // Component mounted
   }, []);
 
   // Fallback timeout to ensure page loads even if API calls fail
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (loading && activeTab === 'discussions' && discussions.length === 0) {
-        console.log('Using fallback discussion data');
         setDiscussions(getMockDiscussions());
         setLoading(false);
       } else if (loading && activeTab === 'members' && communityMembers.length === 0) {
-        console.log('Using fallback community member data');
         setCommunityMembers(getMockCommunityMembers());
         setLoading(false);
       }
@@ -279,8 +277,7 @@ const CommunityPage: React.FC = () => {
       const response = await fetch('/api/discussions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           title: newDiscussion.title,
@@ -339,8 +336,7 @@ const CommunityPage: React.FC = () => {
       const response = await fetch(`/api/discussions/${discussionId}/like`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
+          'Content-Type': 'application/json'
         }
       });
       
@@ -381,8 +377,7 @@ const CommunityPage: React.FC = () => {
       const response = await fetch(`/api/discussions/${discussionId}/replies`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ content })
       });

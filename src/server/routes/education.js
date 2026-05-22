@@ -4,7 +4,7 @@ const router = express.Router();
 
 // Simple logger
 const logger = {
-  info: (msg) => console.log(`[EDUCATION] ${new Date().toISOString()} - ${msg}`),
+  info: () => {},
   error: (msg) => console.error(`[EDUCATION ERROR] ${new Date().toISOString()} - ${msg}`)
 };
 

@@ -59,7 +59,7 @@ const PaymentPage: React.FC = () => {
 
   // Debugging - log when component mounts
   useEffect(() => {
-    console.log('PaymentPage mounted');
+    // Component mounted
   }, []);
 
   useEffect(() => {
@@ -71,11 +71,7 @@ const PaymentPage: React.FC = () => {
 
   const checkDemoStatus = async () => {
     try {
-      const response = await axios.get('/api/payments/is-demo-user', {
-        headers: {
-          'x-api-key': import.meta.env.VITE_AIMLAPI_AI_API_KEY
-        }
-      });
+      const response = await axios.get('/api/payments/is-demo-user');
       setIsDemoUser(response.data.isDemoUser);
 
       if (response.data.isDemoUser) {
@@ -144,7 +140,6 @@ const PaymentPage: React.FC = () => {
           ]
         };
         setPlan(mockPlan);
-        console.log('Using fallback plan data');
       }
     }, 5000);
 

@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Simple logger
 const logger = {
-  info: (msg) => console.log(`[CROPS] ${new Date().toISOString()} - ${msg}`),
+  info: () => {},
   error: (msg) => console.error(`[CROPS ERROR] ${new Date().toISOString()} - ${msg}`)
 };
 
