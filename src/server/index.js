@@ -131,8 +131,12 @@ app.use('/api/soil', requireAuthOrServiceKey, soilRoutes);
 
 // Import and configure education routes
 import educationRoutes from './routes/education.js';
+import aiRoutes from './routes/ai.js';
 logger.info('Loaded education routes');
 app.use('/api/education', requireAuthOrServiceKey, educationRoutes);
+
+logger.info('Loaded AI proxy routes');
+app.use('/api/ai', requireAuthOrServiceKey, aiRoutes);
 
 import externalRoutes from './routes/external.js';
 logger.info('Loaded external proxy routes');

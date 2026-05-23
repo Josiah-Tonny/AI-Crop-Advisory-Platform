@@ -10,16 +10,26 @@ import {
 const cropCache = new Map<string, CropRecommendation[]>();
 const diseaseCache = new Map<string, DiseasePrediction>();
 
-// AI Configuration from environment
-const AI_CONFIG = {
-  weather: {
-    apiKey: import.meta.env.VITE_OPENWEATHER_API_KEY,
-    baseUrl: 'https://api.openweathermap.org/data/2.5'
-  },
-  openai: {
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-    baseUrl: 'https://api.openai.com/v1'
+const apiClient = axios.create({
+  baseURL: '/api/ai',
+  headers: {
+    'Content-Type': 'application/json'
   }
+});
+
+const fileToBase64 = async (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Failed to convert file to base64'));
+      }
+    };
+    reader.onerror = error => reject(error);
+  });
 };
 
 /**
@@ -28,19 +38,14 @@ const AI_CONFIG = {
 export const detectPlantDisease = async (imageFile: File): Promise<DiseasePrediction> => {
   const cacheKey = `disease_${imageFile.name}_${imageFile.size}`;
   
-  // Check cache first
   const cachedResult = diseaseCache.get(cacheKey);
   if (cachedResult) {
     return cachedResult;
   }
 
-  const formData = new FormData();
-  formData.append('image', imageFile);
-
-  const response = await axios.post(`${AI_CONFIG.openai.baseUrl}/analyze-plant-disease`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+  const base64Image = await fileToBase64(imageFile);
+  const response = await apiClient.post('/detect-plant-disease', {
+    image: base64Image
   });
 
   const result = response.data as DiseasePrediction;
@@ -288,32 +293,11 @@ const getCropTips = (crop: string, weather: WeatherData): string[] => {
  * Get personalized farming advice
  */
 export const getFarmingAdvice = async (query: string): Promise<string> => {
-  const response = await axios.post(
-    `${AI_CONFIG.openai.baseUrl}/chat/completions`,
-    {
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert agricultural advisor providing concise, practical farming advice. Keep responses under 200 words.',
-        },
-        {
-          role: 'user',
-          content: query,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 300,
-    },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`,
-      },
-    }
-  );
+  const response = await apiClient.post('/chat', {
+    query
+  });
 
-  return response.data.choices[0].message.content;
+  return response.data.content;
 };
 
 // Export the service

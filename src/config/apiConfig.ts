@@ -32,7 +32,7 @@ export const API_CONFIG = {
   // Weather API
   WEATHER: {
     BASE_URL: 'https://api.openweathermap.org/data/2.5',
-    API_KEY: import.meta.env.VITE_OPENWEATHER_API_KEY,
+    API_KEY: undefined,
   },
   
   // Request Configuration
@@ -171,7 +171,9 @@ export const API_CONFIG = {
     // Use the browser-compatible URL utility
     const baseUrl = browserUrl.joinUrl(API_CONFIG.WEATHER.BASE_URL, endpoint);
     const url = new URL(baseUrl);
-    url.searchParams.append('appid', API_CONFIG.WEATHER.API_KEY || '');
+    if (API_CONFIG.WEATHER.API_KEY) {
+      url.searchParams.append('appid', API_CONFIG.WEATHER.API_KEY);
+    }
     return url.toString();
   },
 };

@@ -1,18 +1,8 @@
 import axios from 'axios';
 
-// API key from environment variable
-const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || 'AIzaSyB1D3dpF9ae41RrC1V8Ow7fYBlag87N0nM';
-
-// YouTube API base URL
-const YOUTUBE_API_BASE_URL = 'https://www.googleapis.com/youtube/v3';
-
-// Create YouTube API client
 const youtubeClient = axios.create({
-  baseURL: YOUTUBE_API_BASE_URL,
-  timeout: 30000,
-  params: {
-    key: YOUTUBE_API_KEY
-  }
+  baseURL: '/api/external/youtube',
+  timeout: 30000
 });
 
 // Define interfaces for response types
@@ -73,9 +63,7 @@ export const educationService = {
       // Search for videos
       const searchResponse = await youtubeClient.get('/search', {
         params: {
-          part: 'snippet',
           q: `agriculture ${query}`,
-          type: 'video',
           maxResults,
           relevanceLanguage: 'en',
           videoCategoryId: '28', // Science & Technology category
@@ -90,7 +78,6 @@ export const educationService = {
       // Get detailed information about the videos
       const videoResponse = await youtubeClient.get('/videos', {
         params: {
-          part: 'snippet,contentDetails,statistics',
           id: videoIds
         }
       });

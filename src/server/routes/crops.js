@@ -15,8 +15,12 @@ const logger = {
 };
 
 // Trefle API configuration
-const TREFLE_API_KEY = process.env.TREFLE_API_KEY || process.env.VITE_TREFLE_API_KEY || 'usr-FI3Q4yNp4sIfzzhtlYu20zBSvjEhKaN5r67aihtHrzQ';
+const TREFLE_API_KEY = process.env.TREFLE_API_KEY;
 const TREFLE_BASE_URL = 'https://trefle.io/api/v1';
+
+if (!TREFLE_API_KEY) {
+  throw new Error('TREFLE_API_KEY must be configured in environment variables.');
+}
 
 /**
  * POST /recommend

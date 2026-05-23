@@ -1,5 +1,5 @@
 import { ImageAnalysisResult, ImageTimelineEntry, GrowthComparison } from '../types/crops';
-import { imageService as originalImageService } from './imageService';
+import { imageService as originalImageService } from './secureImageService';
 
 // Extend the original imageService with the required functions
 export const analyzeCropImage = async (params: {

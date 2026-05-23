@@ -2,7 +2,7 @@ import axios from 'axios';
 import { WeatherData } from '../types';
 import { weatherService } from './weatherService';
 import plantService from './plantService';
-import imageService from './imageService';
+import imageService from './secureImageService';
 import educationService from './educationService';
 
 // Backend URL for any server-side APIs
@@ -304,16 +304,19 @@ export const aimlService = {
       try {
         // This would be replaced with actual AgroMonitoring API call
         // Get real AgroMonitoring data
-        const agroResponse = await fetch(
-          `http://api.agromonitoring.com/agro/1.0/soil?appid=${import.meta.env.VITE_AGROMONITORING_API_KEY}&polyid=YOUR_POLYGON_ID`
-        );
-              
-        if (agroResponse.ok) {
-          const agroResult = await agroResponse.json();
+        const agroResponse = await axios.get('/api/external/agromonitoring/soil', {
+          params: {
+            lat: location.lat,
+            lon: location.lon
+          }
+        });
+
+        if (agroResponse.status === 200) {
+          const agroResult = agroResponse.data;
           agroData = {
             moisture: agroResult.moisture,
-            temperature: agroResult.t10,
-            soilType: params?.soilType || agroResult.soil_type
+            temperature: agroResult.temperature || agroResult.t10,
+            soilType: params?.soilType || agroResult.soilType || agroResult.soil_type
           };
         }
       } catch (agroError) {
